@@ -6,7 +6,7 @@
  *
  * @flow strict
  */
-
+// 用数组模拟二叉树搞了个最小堆
 type Heap = Array<Node>;
 type Node = {|
   id: number,
@@ -85,7 +85,7 @@ function siftDown(heap, node, i) {
     }
   }
 }
-
+// 先对比sortIndex再对比id
 function compare(a, b) {
   // Compare sort index first, then task id.
   const diff = a.sortIndex - b.sortIndex;
