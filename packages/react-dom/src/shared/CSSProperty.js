@@ -8,6 +8,7 @@
 /**
  * CSS properties which accept numbers but are not in units of "px".
  */
+// 没有px单位的CSS属性
 export const isUnitlessNumber = {
   animationIterationCount: true,
   borderImageOutset: true,

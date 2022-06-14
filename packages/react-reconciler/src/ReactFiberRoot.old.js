@@ -25,20 +25,20 @@ import {
 import {unstable_getThreadID} from 'scheduler/tracing';
 import {initializeUpdateQueue} from './ReactUpdateQueue.old';
 import {LegacyRoot, BlockingRoot, ConcurrentRoot} from './ReactRootTags';
-
+// FiberRoot的构造函数，它的上面会存储很多和react调度相关的变量
 function FiberRootNode(containerInfo, tag, hydrate) {
-  this.tag = tag;
-  this.containerInfo = containerInfo;
+  this.tag = tag;// react调度的mode
+  this.containerInfo = containerInfo;// 挂载的DOM结点
   this.pendingChildren = null;
-  this.current = null;
+  this.current = null;//当前页面上展示中的fiber树
   this.pingCache = null;
-  this.finishedWork = null;
+  this.finishedWork = null;//刚执行完调度的fiber树的副作用链表
   this.timeoutHandle = noTimeout;
   this.context = null;
   this.pendingContext = null;
   this.hydrate = hydrate;
-  this.callbackNode = null;
-  this.callbackPriority = NoLanePriority;
+  this.callbackNode = null; // 使用Scheduler调度返回的任务结点
+  this.callbackPriority = NoLanePriority; //调度优先级
   this.eventTimes = createLaneMap(NoLanes);
   this.expirationTimes = createLaneMap(NoTimestamp);
 
@@ -79,7 +79,8 @@ function FiberRootNode(containerInfo, tag, hydrate) {
     }
   }
 }
-
+// 创建一个fiberRoot，再创建一个hostRootFiber
+// 然后把fiberRoot.current指向hostRootFiber，hostRootFiber.stateNode指向fiberRoot
 export function createFiberRoot(
   containerInfo: any,
   tag: RootTag,

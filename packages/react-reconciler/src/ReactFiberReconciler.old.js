@@ -237,7 +237,7 @@ function findHostInstanceWithWarning(
   }
   return findHostInstance(component);
 }
-
+// createContainer其实就是调用createFiberRoot生成fiberRoot
 export function createContainer(
   containerInfo: Container,
   tag: RootTag,
@@ -246,16 +246,17 @@ export function createContainer(
 ): OpaqueRoot {
   return createFiberRoot(containerInfo, tag, hydrate, hydrationCallbacks);
 }
-
+// 调用ReactDOM.render，都通过这个函数发起调度，不管是挂载还是后续更新
 export function updateContainer(
-  element: ReactNodeList,
-  container: OpaqueRoot,
+  element: ReactNodeList, //ReactDOM.render的第一个参数
+  container: OpaqueRoot, //fiberRoot
   parentComponent: ?React$Component<any, any>,
   callback: ?Function,
 ): Lane {
   if (__DEV__) {
     onScheduleRoot(container, element);
   }
+  // 获取当前hostRootFiber
   const current = container.current;
   const eventTime = requestEventTime();
   if (__DEV__) {
@@ -298,6 +299,7 @@ export function updateContainer(
   const update = createUpdate(eventTime, lane);
   // Caution: React DevTools currently depends on this property
   // being called "element".
+  // fiberRoot的update的payload是ReactDOM.render的第一个参数
   update.payload = {element};
 
   callback = callback === undefined ? null : callback;
@@ -333,10 +335,11 @@ export {
   IsThisRendererActing,
   act,
 };
-
+// 入参是fiberRoot，返回ReactDOM.render的第一个参数对应的fiber，即<App />对应的fiber
 export function getPublicRootInstance(
   container: OpaqueRoot,
 ): React$Component<any, any> | PublicInstance | null {
+  //containerFiber是hostRootFiber
   const containerFiber = container.current;
   if (!containerFiber.child) {
     return null;
@@ -345,6 +348,7 @@ export function getPublicRootInstance(
     case HostComponent:
       return getPublicInstance(containerFiber.child.stateNode);
     default:
+      // hostRootFiber.child是ReactDOM.render第一个参数对应的fiber，返回他的stateNode
       return containerFiber.child.stateNode;
   }
 }

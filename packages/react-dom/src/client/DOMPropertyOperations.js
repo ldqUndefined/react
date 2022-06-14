@@ -133,6 +133,7 @@ export function getValueForAttribute(
  * @param {string} name
  * @param {*} value
  */
+// 设置DOM属性，移除变成空的属性，忽略事件属性
 export function setValueForProperty(
   node: Element,
   name: string,

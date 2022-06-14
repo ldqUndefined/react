@@ -89,7 +89,7 @@ export function isAttributeNameSafe(attributeName: string): boolean {
   }
   return false;
 }
-
+// 判断属性是否可忽略的逻辑，基本就是忽略事件on开头的，因为事件委托了
 export function shouldIgnoreAttribute(
   name: string,
   propertyInfo: PropertyInfo | null,

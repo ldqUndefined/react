@@ -6,7 +6,7 @@
  *
  * @flow
  */
-
+// 合并默认defaultProps
 export function resolveDefaultProps(Component: any, baseProps: Object): Object {
   if (Component && Component.defaultProps) {
     // Resolve default props. Taken from ReactElement

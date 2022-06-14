@@ -18,6 +18,7 @@ import {TEXT_NODE} from '../shared/HTMLNodeType';
  * @param {string} text
  * @internal
  */
+// 就设置DOM节点文本内容的操作
 const setTextContent = function(node: Element, text: string): void {
   if (text) {
     const firstChild = node.firstChild;

@@ -406,7 +406,7 @@ function computeExpirationTime(lane: Lane, currentTime: number) {
     return NoTimestamp;
   }
 }
-
+// 看看有没有一直被跳过导致超时的优先级任务
 export function markStarvedLanesAsExpired(
   root: FiberRoot,
   currentTime: number,
@@ -425,6 +425,7 @@ export function markStarvedLanesAsExpired(
   // it as expired to force it to finish.
   let lanes = pendingLanes;
   while (lanes > 0) {
+    // 获取lane对应的index
     const index = pickArbitraryLaneIndex(lanes);
     const lane = 1 << index;
 
@@ -648,12 +649,13 @@ export function createLaneMap<T>(initial: T): LaneMap<T> {
   }
   return laneMap;
 }
-
+// 将根标记为有更新，并给触发的事件存了一个eventTime
 export function markRootUpdated(
   root: FiberRoot,
   updateLane: Lane,
   eventTime: number,
 ) {
+  // 根上待渲染优先级区
   root.pendingLanes |= updateLane;
 
   // TODO: Theoretically, any update to any lane can unblock any other lane. But

@@ -375,7 +375,7 @@ function setInitialDOMProperties(
     }
   }
 }
-
+// 更新DOM节点属性
 function updateDOMProperties(
   domElement: Element,
   updatePayload: Array<any>,
@@ -387,12 +387,16 @@ function updateDOMProperties(
     const propKey = updatePayload[i];
     const propValue = updatePayload[i + 1];
     if (propKey === STYLE) {
+      // 更新style
       setValueForStyles(domElement, propValue);
     } else if (propKey === DANGEROUSLY_SET_INNER_HTML) {
+      // 设置innerHTML
       setInnerHTML(domElement, propValue);
     } else if (propKey === CHILDREN) {
+      // 设置文本内容
       setTextContent(domElement, propValue);
     } else {
+      // 设置其余节点属性
       setValueForProperty(domElement, propKey, propValue, isCustomComponentTag);
     }
   }
@@ -864,6 +868,7 @@ export function diffProperties(
 }
 
 // Apply the diff.
+// 更新DOM节点属性
 export function updateProperties(
   domElement: Element,
   updatePayload: Array<any>,
@@ -885,6 +890,7 @@ export function updateProperties(
   const wasCustomComponentTag = isCustomComponent(tag, lastRawProps);
   const isCustomComponentTag = isCustomComponent(tag, nextRawProps);
   // Apply the diff.
+  // DOM更新主要关注这里
   updateDOMProperties(
     domElement,
     updatePayload,

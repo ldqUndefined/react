@@ -338,7 +338,8 @@ function areHookInputsEqual(
   }
   return true;
 }
-
+// 函数组件执行过程，会根据组件mount/update协调对应的hook类型
+// 返回子ReactElement
 export function renderWithHooks<Props, SecondArg>(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -378,6 +379,7 @@ export function renderWithHooks<Props, SecondArg>(
   // Using memoizedState to differentiate between mount/update only works if at least one stateful hook is used.
   // Non-stateful hooks (e.g. context) don't get added to memoizedState,
   // so memoizedState would be null during updates and mounts.
+  // 不能用workInProgress.memoizedState来区分mount和update的原因
   if (__DEV__) {
     if (current !== null && current.memoizedState !== null) {
       ReactCurrentDispatcher.current = HooksDispatcherOnUpdateInDEV;
@@ -392,15 +394,19 @@ export function renderWithHooks<Props, SecondArg>(
       ReactCurrentDispatcher.current = HooksDispatcherOnMountInDEV;
     }
   } else {
+    // 判断该函数组件里是用mount还是update类型的hook
     ReactCurrentDispatcher.current =
       current === null || current.memoizedState === null
         ? HooksDispatcherOnMount
         : HooksDispatcherOnUpdate;
   }
-
+  // 执行函数组件，返回JSX(子ReactElement元素)
+  // 并且在函数的执行过程中，把hook都给执行了，因为你在Component里调用了hook
+  // 里面hook的类型就是上面ReactCurrentDispatcher.current里赋值的
   let children = Component(props, secondArg);
 
   // Check if there was a render phase update
+  // 当你在函数组件里调用hook触发了更新时，会进到这里，比如你直接在函数组件里setState了
   if (didScheduleRenderPhaseUpdateDuringThisPass) {
     // Keep rendering in a loop for as long as render phase updates continue to
     // be scheduled. Use a counter to prevent infinite loops.
@@ -441,6 +447,7 @@ export function renderWithHooks<Props, SecondArg>(
 
   // We can assume the previous dispatcher is always this one, since we set it
   // at the beginning of the render phase and there's no re-entrancy.
+  // 在函数组件以外使用hook会报错的原因，因为ReactCurrentDispatcher.current指向函数都是报错函数
   ReactCurrentDispatcher.current = ContextOnlyDispatcher;
 
   if (__DEV__) {
@@ -471,10 +478,10 @@ export function renderWithHooks<Props, SecondArg>(
     'Rendered fewer hooks than expected. This may be caused by an accidental ' +
       'early return statement.',
   );
-
+  // 返回子ReactElement元素
   return children;
 }
-
+// 函数组件fiber走bailout逻辑时的处理
 export function bailoutHooks(
   current: Fiber,
   workInProgress: Fiber,

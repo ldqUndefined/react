@@ -153,7 +153,7 @@ let updateHostComponent;
 let updateHostText;
 if (supportsMutation) {
   // Mutation mode
-
+  // 把当前dom结点对应的下一级的所有dom子元素实例插入到当前dom结点下
   appendAllChildren = function(
     parent: Instance,
     workInProgress: Fiber,
@@ -641,7 +641,7 @@ function cutOffTailIfNeeded(
     }
   }
 }
-
+// 根据fiber的类型执行一些工作
 function completeWork(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -700,6 +700,7 @@ function completeWork(
       popHostContext(workInProgress);
       const rootContainerInstance = getRootHostContainer();
       const type = workInProgress.type;
+      // 这个分支判断很重要，如果之前dom结点存在过，则走更新逻辑，否则在completeWork阶段就要生成实例并插入到父DOM节点上，具体看else分支
       if (current !== null && workInProgress.stateNode != null) {
         updateHostComponent(
           current,
@@ -744,6 +745,8 @@ function completeWork(
             markUpdate(workInProgress);
           }
         } else {
+          // (重点)在completeWork阶段就生成当前fiber结点对应的DOM实例并且把子DOM节点挂载在当前DOM实例下
+          // 调用对应的host提供的创建实例的方法，创建host实例，如DOM结点
           const instance = createInstance(
             type,
             newProps,
@@ -751,7 +754,7 @@ function completeWork(
             currentHostContext,
             workInProgress,
           );
-
+          // 把当前DOM结点的所有儿子结点插入到当前结点下
           appendAllChildren(instance, workInProgress, false, false);
 
           workInProgress.stateNode = instance;
@@ -759,6 +762,7 @@ function completeWork(
           // Certain renderers require commit-time effects for initial mount.
           // (eg DOM renderer supports auto-focus for certain elements).
           // Make sure such renderers get scheduled for later work.
+          // 如果给实例结点设置完属性之后有副作用，如输入框有auto-focus之类的要在提交之后做
           if (
             finalizeInitialChildren(
               instance,

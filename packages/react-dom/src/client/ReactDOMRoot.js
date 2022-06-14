@@ -62,7 +62,7 @@ import {
 function ReactDOMRoot(container: Container, options: void | RootOptions) {
   this._internalRoot = createRootImpl(container, ConcurrentRoot, options);
 }
-
+// legacy模式的ReactDOMRoot构造函数，有个_internalRoot指向fiberRoot
 function ReactDOMBlockingRoot(
   container: Container,
   tag: RootTag,
@@ -116,7 +116,7 @@ ReactDOMRoot.prototype.unmount = ReactDOMBlockingRoot.prototype.unmount = functi
     unmarkContainerAsRoot(container);
   });
 };
-
+// 创建fiberRoot，并且初始化事件监听
 function createRootImpl(
   container: Container,
   tag: RootTag,
@@ -131,13 +131,16 @@ function createRootImpl(
       options.hydrationOptions != null &&
       options.hydrationOptions.mutableSources) ||
     null;
+  // 创建fiberRoot
   const root = createContainer(container, tag, hydrate, hydrationCallbacks);
+  // 让container有个字段指向hostRootFiber
   markContainerAsRoot(root.current, container);
   const containerNodeType = container.nodeType;
 
   if (enableEagerRootListeners) {
     const rootContainerElement =
       container.nodeType === COMMENT_NODE ? container.parentNode : container;
+    // 初始化事件监听
     listenToAllSupportedEvents(rootContainerElement);
   } else {
     if (hydrate && tag !== LegacyRoot) {
@@ -191,7 +194,7 @@ export function createBlockingRoot(
   warnIfReactDOMContainerInDEV(container);
   return new ReactDOMBlockingRoot(container, BlockingRoot, options);
 }
-
+// lagacyFiberRoot创建
 export function createLegacyRoot(
   container: Container,
   options?: RootOptions,

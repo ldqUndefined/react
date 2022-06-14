@@ -109,7 +109,7 @@ function shouldHydrateDueToLegacyHeuristic(container) {
     rootElement.hasAttribute(ROOT_ATTRIBUTE_NAME)
   );
 }
-
+// 根据container创建ReactDOMRoot
 function legacyCreateRootFromDOMContainer(
   container: Container,
   forceHydrate: boolean,
@@ -120,6 +120,7 @@ function legacyCreateRootFromDOMContainer(
   if (!shouldHydrate) {
     let warned = false;
     let rootSibling;
+    // 挂载的dom结点上有子节点时，告警
     while ((rootSibling = container.lastChild)) {
       if (__DEV__) {
         if (
@@ -171,7 +172,7 @@ function warnOnInvalidCallback(callback: mixed, callerName: string): void {
     }
   }
 }
-
+// legacy模式的react树渲染方式
 function legacyRenderSubtreeIntoContainer(
   parentComponent: ?React$Component<any, any>,
   children: ReactNodeList,
@@ -186,9 +187,11 @@ function legacyRenderSubtreeIntoContainer(
 
   // TODO: Without `any` type, Flow says "Property cannot be accessed on any
   // member of intersection type." Whyyyyyy.
+  // root为ReactDOMRoot，有个_internalRoot指向fiberRoot
   let root: RootType = (container._reactRootContainer: any);
   let fiberRoot;
   if (!root) {
+    // 第一次调用render，创建ReactDOMRoot
     // Initial mount
     root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
       container,
@@ -203,10 +206,12 @@ function legacyRenderSubtreeIntoContainer(
       };
     }
     // Initial mount should not be batched.
+    // 同步执行
     unbatchedUpdates(() => {
       updateContainer(children, fiberRoot, parentComponent, callback);
     });
   } else {
+    // 否则在container对应的fiber上做更新
     fiberRoot = root._internalRoot;
     if (typeof callback === 'function') {
       const originalCallback = callback;
@@ -283,7 +288,7 @@ export function hydrate(
     callback,
   );
 }
-
+// ReactDOM.render，创建一个legacy模式的fiber树，并返回第一个参数对应的fiber
 export function render(
   element: React$Element<any>,
   container: Container,

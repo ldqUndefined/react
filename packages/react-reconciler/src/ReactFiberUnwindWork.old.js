@@ -130,7 +130,7 @@ function unwindWork(workInProgress: Fiber, renderLanes: Lanes) {
       return null;
   }
 }
-
+// 恢复被打断的内容
 function unwindInterruptedWork(interruptedWork: Fiber) {
   switch (interruptedWork.tag) {
     case ClassComponent: {

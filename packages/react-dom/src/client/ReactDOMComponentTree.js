@@ -49,7 +49,7 @@ export function precacheFiberNode(
 ): void {
   (node: any)[internalInstanceKey] = hostInst;
 }
-
+// 让挂载的dom结点有个指向当前hostRootFiber的字段，方便直接获取
 export function markContainerAsRoot(hostRoot: Fiber, node: Container): void {
   node[internalContainerInstanceKey] = hostRoot;
 }

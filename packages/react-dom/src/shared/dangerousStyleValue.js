@@ -16,6 +16,7 @@ import {isUnitlessNumber} from './CSSProperty';
  * @param {*} value CSS property value such as `10px`.
  * @return {string} Normalized style value with dimensions applied.
  */
+// 转换一下style的value值
 function dangerousStyleValue(name, value, isCustomProperty) {
   // Note that we've removed escapeTextForBrowser() calls here since the
   // whole string will be escaped when the attribute is injected into
@@ -38,6 +39,7 @@ function dangerousStyleValue(name, value, isCustomProperty) {
     value !== 0 &&
     !(isUnitlessNumber.hasOwnProperty(name) && isUnitlessNumber[name])
   ) {
+    // 没带单位，且不在isUnitlessNumber里的，自动拼个px上去
     return value + 'px'; // Presumes implicit 'px' suffix for unitless numbers
   }
 

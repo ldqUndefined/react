@@ -34,7 +34,7 @@ import is from 'shared/objectIs';
 import {createUpdate, enqueueUpdate, ForceUpdate} from './ReactUpdateQueue.old';
 import {markWorkInProgressReceivedUpdate} from './ReactFiberBeginWork.old';
 import {enableSuspenseServerRenderer} from 'shared/ReactFeatureFlags';
-
+// 创建一个各个context共用的栈
 const valueCursor: StackCursor<mixed> = createCursor(null);
 
 let rendererSigil;
@@ -42,13 +42,13 @@ if (__DEV__) {
   // Use this to detect multiple renderers using the same context
   rendererSigil = {};
 }
-
+// 当前执行中的fiber
 let currentlyRenderingFiber: Fiber | null = null;
 let lastContextDependency: ContextDependency<mixed> | null = null;
 let lastContextWithAllBitsObserved: ReactContext<any> | null = null;
 
 let isDisallowedContextReadInDEV: boolean = false;
-
+// 重置和context相关全局字段，这样在组件外调用useContext之类的就会报错
 export function resetContextDependencies(): void {
   // This is called right before React yields execution, to ensure `readContext`
   // cannot be called outside the render phase.
@@ -71,7 +71,7 @@ export function exitDisallowedContextReadInDEV(): void {
     isDisallowedContextReadInDEV = false;
   }
 }
-
+// provider压栈，确保consumer消费的是最近的provider的value
 export function pushProvider<T>(providerFiber: Fiber, nextValue: T): void {
   const context: ReactContext<T> = providerFiber.type._context;
 
@@ -111,7 +111,7 @@ export function pushProvider<T>(providerFiber: Fiber, nextValue: T): void {
     }
   }
 }
-
+// provider出栈
 export function popProvider(providerFiber: Fiber): void {
   const currentValue = valueCursor.current;
 
@@ -124,7 +124,8 @@ export function popProvider(providerFiber: Fiber): void {
     context._currentValue2 = currentValue;
   }
 }
-
+// 判断使用context的组件是否需要重新渲染的方法，对比前后value是否相同
+// 返回0就是相同，否则组件就要重新渲染
 export function calculateChangedBits<T>(
   context: ReactContext<T>,
   newValue: T,
@@ -151,7 +152,7 @@ export function calculateChangedBits<T>(
     return changedBits | 0;
   }
 }
-
+// 如果一个节点需要需要更新了，那么就向上更新该节点的所有祖先节点的childLanes字段，说明这些祖先节点存在子孙节点要更新
 export function scheduleWorkOnParentPath(
   parent: Fiber | null,
   renderLanes: Lanes,
@@ -178,7 +179,7 @@ export function scheduleWorkOnParentPath(
     node = node.return;
   }
 }
-
+// 往下找所有订阅了context的组件
 export function propagateContextChange(
   workInProgress: Fiber,
   context: ReactContext<mixed>,
@@ -293,7 +294,7 @@ export function propagateContextChange(
     fiber = nextFiber;
   }
 }
-
+// 每次readContext之前都要调用的方法，设置全局变量
 export function prepareToReadContext(
   workInProgress: Fiber,
   renderLanes: Lanes,
@@ -308,6 +309,7 @@ export function prepareToReadContext(
     if (firstContext !== null) {
       if (includesSomeLane(dependencies.lanes, renderLanes)) {
         // Context list has a pending update. Mark that this fiber performed work.
+        // 使用了useContext，且Context.Provider的value有更新，标记更新
         markWorkInProgressReceivedUpdate();
       }
       // Reset the work-in-progress list
@@ -315,7 +317,7 @@ export function prepareToReadContext(
     }
   }
 }
-
+// 获取context的值
 export function readContext<T>(
   context: ReactContext<T>,
   observedBits: void | number | boolean,

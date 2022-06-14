@@ -21,12 +21,14 @@ function Component(props, context, updater) {
   this.props = props;
   this.context = context;
   // If a component has string refs, we will assign a different object later.
+  // 字符串类型的ref会特殊处理成一个回调ref函数
   this.refs = emptyObject;
   // We initialize the default updater but the real one gets injected by the
   // renderer.
+  // 在react-reconciler包中，对类组件进行构建的时候，会给updater重新赋值
   this.updater = updater || ReactNoopUpdateQueue;
 }
-
+// 用来判断组件是函数组件还是类组件的特殊字段
 Component.prototype.isReactComponent = {};
 
 /**
@@ -54,6 +56,7 @@ Component.prototype.isReactComponent = {};
  * @final
  * @protected
  */
+// 类组件可以调用this.setState，setState的实现会调用在react-reconciler中注入的updater的具体实现
 Component.prototype.setState = function(partialState, callback) {
   invariant(
     typeof partialState === 'object' ||
@@ -79,6 +82,7 @@ Component.prototype.setState = function(partialState, callback) {
  * @final
  * @protected
  */
+// 类组件可以调用this.forceUpdate，forceUpdate的实现会调用在react-reconciler中注入的updater的具体实现
 Component.prototype.forceUpdate = function(callback) {
   this.updater.enqueueForceUpdate(this, callback, 'forceUpdate');
 };
@@ -126,6 +130,8 @@ ComponentDummy.prototype = Component.prototype;
 /**
  * Convenience component with default shallow equality check for sCU.
  */
+// 纯函数，实现的原理就是在原型链上加多一个有isPureReactComponent为true的对象，并且这个对象上有React.Component的所有原型方法
+// 所以我们判断纯函数时只要判断组件上有isPureReactComponent即可，
 function PureComponent(props, context, updater) {
   this.props = props;
   this.context = context;
@@ -133,11 +139,14 @@ function PureComponent(props, context, updater) {
   this.refs = emptyObject;
   this.updater = updater || ReactNoopUpdateQueue;
 }
-
+// PureComponent的原型是用React.Component.prototype构造出来的一个实例对象
 const pureComponentPrototype = (PureComponent.prototype = new ComponentDummy());
+// 重新赋值构造函数引用
 pureComponentPrototype.constructor = PureComponent;
 // Avoid an extra prototype jump for these methods.
+// 把React.Component的原型方法弄到PureComponent.prototype，不然每次实例读取原型方法时都要在原型链上走多一层
 Object.assign(pureComponentPrototype, Component.prototype);
+// 判断是否纯函数的字段
 pureComponentPrototype.isPureReactComponent = true;
 
 export {Component, PureComponent};

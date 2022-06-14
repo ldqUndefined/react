@@ -145,7 +145,7 @@ if (__DEV__) {
   });
   Object.freeze(fakeInternalInstance);
 }
-
+// 执行getDerivedStateFromProps生命周期函数
 export function applyDerivedStateFromProps(
   workInProgress: Fiber,
   ctor: any,
@@ -286,7 +286,7 @@ const classComponentUpdater = {
     }
   },
 };
-
+// 判断类组件是否需要重新渲染
 function checkShouldComponentUpdate(
   workInProgress,
   ctor,
@@ -330,7 +330,7 @@ function checkShouldComponentUpdate(
 
     return shouldUpdate;
   }
-
+  // 如果类组件继承的是React.PureComponent，则走纯组件的浅对比props和state逻辑
   if (ctor.prototype && ctor.prototype.isPureReactComponent) {
     return (
       !shallowEqual(oldProps, newProps) || !shallowEqual(oldState, newState)
@@ -559,17 +559,20 @@ function checkClassInstance(workInProgress: Fiber, ctor: any, newProps: any) {
     }
   }
 }
-
+// 给类组件的实例添加react调度的适配器
 function adoptClassInstance(workInProgress: Fiber, instance: any): void {
   instance.updater = classComponentUpdater;
+  // 实例挂载到fiber.stateNode上
   workInProgress.stateNode = instance;
   // The instance needs access to the fiber so that it can schedule updates
+  // 把fiber挂载到类实例的_reactInternals属性上，这样就可以方便地获取类实例对应的fiber结点了
+  // 所以fiber.stateNode为类实例，instance._reactInternals为fiber结点
   setInstance(instance, workInProgress);
   if (__DEV__) {
     instance._reactInternalInstance = fakeInternalInstance;
   }
 }
-
+// 把类组件给实例化再把实例挂载到fiber.stateNode上
 function constructClassInstance(
   workInProgress: Fiber,
   ctor: any,
@@ -623,6 +626,7 @@ function constructClassInstance(
   }
 
   if (typeof contextType === 'object' && contextType !== null) {
+    // 获取类组件订阅的context
     context = readContext((contextType: any));
   } else if (!disableLegacyContext) {
     unmaskedContext = getUnmaskedContext(workInProgress, ctor, true);
@@ -648,12 +652,14 @@ function constructClassInstance(
       }
     }
   }
-
+  // 类组件构造函数执行
   const instance = new ctor(props, context);
+  // 把类组件的state挂在到fiber.memoizedState上，就是类实例里的this.state
   const state = (workInProgress.memoizedState =
     instance.state !== null && instance.state !== undefined
       ? instance.state
       : null);
+  // 让类组件和react调度连接起来的方法----给类实例添加适配器
   adoptClassInstance(workInProgress, instance);
 
   if (__DEV__) {
@@ -747,7 +753,7 @@ function constructClassInstance(
 
   return instance;
 }
-
+// 执行componentWillMount生命周期函数
 function callComponentWillMount(workInProgress, instance) {
   const oldState = instance.state;
 
@@ -757,7 +763,7 @@ function callComponentWillMount(workInProgress, instance) {
   if (typeof instance.UNSAFE_componentWillMount === 'function') {
     instance.UNSAFE_componentWillMount();
   }
-
+  // 如果直接在componentWillMount里编写了this.state = xxx之类的代码，会报错
   if (oldState !== instance.state) {
     if (__DEV__) {
       console.error(
@@ -767,10 +773,11 @@ function callComponentWillMount(workInProgress, instance) {
         getComponentName(workInProgress.type) || 'Component',
       );
     }
+    // 新增一个update，触发一次更新，原来react对于这些人错误写法也兜底了
     classComponentUpdater.enqueueReplaceState(instance, instance.state, null);
   }
 }
-
+// 不看咯，废弃的生命周期
 function callComponentWillReceiveProps(
   workInProgress,
   instance,
@@ -804,6 +811,7 @@ function callComponentWillReceiveProps(
 }
 
 // Invokes the mount life-cycles on a previously never rendered instance.
+// 挂载类实例及执行挂载生命周期
 function mountClassInstance(
   workInProgress: Fiber,
   ctor: any,
@@ -815,10 +823,11 @@ function mountClassInstance(
   }
 
   const instance = workInProgress.stateNode;
+  // 这里才挂载了props，这也是constructor里读this.props读不到的原因
   instance.props = newProps;
   instance.state = workInProgress.memoizedState;
   instance.refs = emptyRefsObject;
-
+  // 初始化update队列
   initializeUpdateQueue(workInProgress);
 
   const contextType = ctor.contextType;
@@ -864,6 +873,7 @@ function mountClassInstance(
   instance.state = workInProgress.memoizedState;
 
   const getDerivedStateFromProps = ctor.getDerivedStateFromProps;
+  // 如果有编写getDerivedStateFromProps生命周期函数，则执行
   if (typeof getDerivedStateFromProps === 'function') {
     applyDerivedStateFromProps(
       workInProgress,
@@ -885,10 +895,11 @@ function mountClassInstance(
     callComponentWillMount(workInProgress, instance);
     // If we had additional state updates during this life-cycle, let's
     // process them now.
+    // 如果你在生命ComponentWillMount生命周期函数里执行了this.setState之类的，又会处理一次更新
     processUpdateQueue(workInProgress, newProps, instance, renderLanes);
     instance.state = workInProgress.memoizedState;
   }
-
+  // 如果有componentDidMount生命周期函数，会给fiber打上标记，后续执行
   if (typeof instance.componentDidMount === 'function') {
     workInProgress.flags |= Update;
   }
@@ -1028,6 +1039,7 @@ function resumeMountClassInstance(
 }
 
 // Invokes the update life-cycles and returns false if it shouldn't rerender.
+// 类组件更新逻辑
 function updateClassInstance(
   current: Fiber,
   workInProgress: Fiber,
@@ -1099,6 +1111,7 @@ function updateClassInstance(
     !hasContextChanged() &&
     !checkHasForceUpdateAfterProcessing()
   ) {
+    // 不用重新渲染，但是如果满足生命周期执行条件，还是要打标记，后续执行对应生命周期
     // If an update was already in progress, we should schedule an Update
     // effect even though we're bailing out, so that cWU/cDU are called.
     if (typeof instance.componentDidUpdate === 'function') {
@@ -1157,6 +1170,7 @@ function updateClassInstance(
         instance.UNSAFE_componentWillUpdate(newProps, newState, nextContext);
       }
     }
+    // 下面两个依旧是给组件打上标记后续执行
     if (typeof instance.componentDidUpdate === 'function') {
       workInProgress.flags |= Update;
     }
@@ -1191,6 +1205,7 @@ function updateClassInstance(
 
   // Update the existing instance's state, props, and context pointers even
   // if shouldComponentUpdate returns false.
+  // 无论是否需要重新渲染，都要把相关状态值更新，这样才能保持数据一致性
   instance.props = newProps;
   instance.state = newState;
   instance.context = nextContext;

@@ -391,7 +391,7 @@ export const noTimeout = -1;
 // -------------------
 
 export const supportsMutation = true;
-
+// commit第三阶段dom结点要做的事
 export function commitMount(
   domElement: Instance,
   type: string,
@@ -412,7 +412,7 @@ export function commitMount(
       | HTMLTextAreaElement).focus();
   }
 }
-
+// 更新DOM节点
 export function commitUpdate(
   domElement: Instance,
   updatePayload: Array<mixed>,
@@ -423,15 +423,17 @@ export function commitUpdate(
 ): void {
   // Update the props handle so that we know which props are the ones with
   // with current event handlers.
+  // 让dom节点持有新的props
   updateFiberProps(domElement, newProps);
   // Apply the diff to the DOM node.
+  // 更新DOM属性
   updateProperties(domElement, updatePayload, type, oldProps, newProps);
 }
 
 export function resetTextContent(domElement: Instance): void {
   setTextContent(domElement, '');
 }
-
+// 文本结点内容更新
 export function commitTextUpdate(
   textInstance: TextInstance,
   oldText: string,
@@ -439,14 +441,14 @@ export function commitTextUpdate(
 ): void {
   textInstance.nodeValue = newText;
 }
-
+// 父节点不是container类型时的插最后实现
 export function appendChild(
   parentInstance: Instance,
   child: Instance | TextInstance,
 ): void {
   parentInstance.appendChild(child);
 }
-
+// 父节点类型是container类型时的插最后实现
 export function appendChildToContainer(
   container: Container,
   child: Instance | TextInstance,
@@ -476,7 +478,7 @@ export function appendChildToContainer(
     trapClickOnNonInteractiveElement(((parentNode: any): HTMLElement));
   }
 }
-
+// 父节点不是container时的插中间实现
 export function insertBefore(
   parentInstance: Instance,
   child: Instance | TextInstance,
@@ -484,7 +486,7 @@ export function insertBefore(
 ): void {
   parentInstance.insertBefore(child, beforeChild);
 }
-
+// 父节点是container类型插中间的实现
 export function insertInContainerBefore(
   container: Container,
   child: Instance | TextInstance,
@@ -523,14 +525,14 @@ function dispatchAfterDetachedBlur(target: HTMLElement): void {
     document.dispatchEvent(event);
   }
 }
-
+// 父节点不是container的卸载DOM节点实现
 export function removeChild(
   parentInstance: Instance,
   child: Instance | TextInstance | SuspenseInstance,
 ): void {
   parentInstance.removeChild(child);
 }
-
+// 父节点是container的卸载DOM节点实现
 export function removeChildFromContainer(
   container: Container,
   child: Instance | TextInstance | SuspenseInstance,

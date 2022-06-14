@@ -120,39 +120,39 @@ function FiberNode(
   mode: TypeOfMode,
 ) {
   // Instance
-  this.tag = tag;
+  this.tag = tag; // fiber结点类型
   this.key = key;
-  this.elementType = null;
-  this.type = null;
-  this.stateNode = null;
+  this.elementType = null; // elementType和type一般是相同的
+  this.type = null;  // 宿主组件就是字符串，否则就是组件对应的应用
+  this.stateNode = null; // 组件的状态，宿主组件就是DOM结点引用，类组件是类实例
 
   // Fiber
-  this.return = null;
-  this.child = null;
-  this.sibling = null;
-  this.index = 0;
+  this.return = null; // 父节点
+  this.child = null; // 第一个子节点
+  this.sibling = null; // 下一个兄弟结点
+  this.index = 0; // 在同一层里的下标
 
-  this.ref = null;
+  this.ref = null; // 就ref
 
-  this.pendingProps = pendingProps;
-  this.memoizedProps = null;
-  this.updateQueue = null;
+  this.pendingProps = pendingProps; // 下一次更新的props
+  this.memoizedProps = null; // 上一次渲染的props
+  this.updateQueue = null; // 更新队列
   this.memoizedState = null;
   this.dependencies = null;
 
-  this.mode = mode;
+  this.mode = mode; // fiber树的模式
 
   // Effects
-  this.flags = NoFlags;
-  this.nextEffect = null;
+  this.flags = NoFlags; // 副作用标记
+  this.nextEffect = null; // 下一个有副作用的fiber结点
 
-  this.firstEffect = null;
-  this.lastEffect = null;
+  this.firstEffect = null; // 第一个有副作用的feber结点
+  this.lastEffect = null; // 最后一个又副作用的fiber结点
 
-  this.lanes = NoLanes;
-  this.childLanes = NoLanes;
+  this.lanes = NoLanes; // 优先级
+  this.childLanes = NoLanes; // 子树优先级
 
-  this.alternate = null;
+  this.alternate = null; // 双缓冲中的对应结点
 
   if (enableProfilerTimer) {
     // Note: The following is done to avoid a v8 performance cliff.
@@ -207,6 +207,7 @@ function FiberNode(
 //    is faster.
 // 5) It should be easy to port this to a C struct and keep a C implementation
 //    compatible.
+// 创建结点都会通过这个函数
 const createFiber = function(
   tag: WorkTag,
   pendingProps: mixed,
@@ -216,12 +217,12 @@ const createFiber = function(
   // $FlowFixMe: the shapes are exact here but Flow doesn't like constructors
   return new FiberNode(tag, pendingProps, key, mode);
 };
-
+// 判断组件是类组件还是函数组件
 function shouldConstruct(Component: Function) {
   const prototype = Component.prototype;
   return !!(prototype && prototype.isReactComponent);
 }
-
+// 没有传默认值的函数组件就是简单函数组件
 export function isSimpleFunctionComponent(type: any) {
   return (
     typeof type === 'function' &&
@@ -229,7 +230,7 @@ export function isSimpleFunctionComponent(type: any) {
     type.defaultProps === undefined
   );
 }
-
+// 判断React.lazy里包裹的组件类型
 export function resolveLazyComponentTag(Component: Function): WorkTag {
   if (typeof Component === 'function') {
     return shouldConstruct(Component) ? ClassComponent : FunctionComponent;
@@ -251,6 +252,10 @@ export function resolveLazyComponentTag(Component: Function): WorkTag {
 }
 
 // This is used to create an alternate fiber to do work on.
+// 使用current结点来创建新的workInProgress结点
+// 1. 如果current有对应的alternate，复用这个alternate节点，并拷贝部分current的属性到该节点
+// 2. 如果current没有对应的alternate，那么创建一个新的fiber结点，并拷贝部分current的属性到该节点
+// 刚返回的结点是和current共用child和sibling的，在后续的reconciliation过程中child和sibling会指向新的fiber结点
 export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
   let workInProgress = current.alternate;
   if (workInProgress === null) {
@@ -427,7 +432,7 @@ export function resetWorkInProgress(workInProgress: Fiber, renderLanes: Lanes) {
 
   return workInProgress;
 }
-
+// 创建hostRootFiber,即第一个fiber结点(fiberRoot的current指向的结点)
 export function createHostRootFiber(tag: RootTag): Fiber {
   let mode;
   if (tag === ConcurrentRoot) {
@@ -444,10 +449,10 @@ export function createHostRootFiber(tag: RootTag): Fiber {
     // Without some nodes in the tree having empty base times.
     mode |= ProfileMode;
   }
-
+  // HostRootFiber也是fiber，只不过结点tag不同
   return createFiber(HostRoot, null, null, mode);
 }
-
+// 会被createFiberFromElement调用
 export function createFiberFromTypeAndProps(
   type: any, // React$ElementType
   key: null | string,
@@ -579,7 +584,9 @@ export function createFiberFromTypeAndProps(
 
   return fiber;
 }
-
+// 通过ReactElement来创建fiber
+// 会在diff的过程中通过这个方法来生成新增的结点
+// createFiberFromElement->createFiberFromTypeAndProps->createFiber->new FiberNode
 export function createFiberFromElement(
   element: ReactElement,
   mode: TypeOfMode,
@@ -745,7 +752,7 @@ export function createFiberFromLegacyHidden(
   fiber.lanes = lanes;
   return fiber;
 }
-
+// 比较重要的结点：宿主文本fiber结点
 export function createFiberFromText(
   content: string,
   mode: TypeOfMode,
@@ -771,7 +778,7 @@ export function createFiberFromDehydratedFragment(
   fiber.stateNode = dehydratedNode;
   return fiber;
 }
-
+// portal结点，fiber.stateNode较为特殊
 export function createFiberFromPortal(
   portal: ReactPortal,
   mode: TypeOfMode,
