@@ -32,7 +32,8 @@ export const {
   enableLazyContextPropagation,
   enableSyncDefaultUpdates,
   enableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay,
-  enableClientRenderFallbackOnHydrationMismatch,
+  enableClientRenderFallbackOnTextMismatch,
+  enableTransitionTracing,
 } = dynamicFeatureFlags;
 
 // On WWW, __EXPERIMENTAL__ is used for a new modern build.
@@ -48,7 +49,6 @@ export const enableProfilerNestedUpdateScheduledHook =
   __PROFILE__ && dynamicFeatureFlags.enableProfilerNestedUpdateScheduledHook;
 export const enableUpdaterTracking = __PROFILE__;
 
-export const enableSuspenseLayoutEffectSemantics = true;
 export const enableSuspenseAvoidThisFallback = true;
 export const enableSuspenseAvoidThisFallbackFizz = false;
 export const enableCPUSuspense = true;
@@ -66,11 +66,9 @@ export const disableLegacyContext = __EXPERIMENTAL__;
 export const warnAboutStringRefs = false;
 export const warnAboutDefaultPropsOnFunctionComponents = false;
 export const enableGetInspectorDataForInstanceInProduction = false;
-export const enableSuspenseServerRenderer = true;
-export const enableSelectiveHydration = true;
 
-export const enableLazyElements = true;
 export const enableCache = true;
+export const enableCacheElement = true;
 
 export const disableJavaScriptURLs = true;
 
@@ -101,8 +99,6 @@ export const allowConcurrentByDefault = true;
 
 export const deletedTreeCleanUpLevel = 3;
 
-export const enablePersistentOffscreenHostContainer = false;
-
 export const consoleManagedByDevToolsDuringStrictMode = true;
 export const enableServerContext = true;
 
@@ -111,8 +107,7 @@ export const enableUseMutableSource = true;
 
 export const enableCustomElementPropertySupport = __EXPERIMENTAL__;
 
-export const enableTransitionTracing = false;
-
+export const enableSymbolFallbackForWWW = true;
 // Flow magic to verify the exports of this file match the original version.
 // eslint-disable-next-line no-unused-vars
 type Check<_X, Y: _X, X: Y = _X> = null;
