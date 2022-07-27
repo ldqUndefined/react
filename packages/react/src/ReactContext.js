@@ -10,7 +10,7 @@
 import {REACT_PROVIDER_TYPE, REACT_CONTEXT_TYPE} from 'shared/ReactSymbols';
 
 import type {ReactContext} from 'shared/ReactTypes';
-
+// 暴露给开发者创建context的api
 export function createContext<T>(
   defaultValue: T,
   calculateChangedBits: ?(a: T, b: T) => number,
@@ -33,14 +33,14 @@ export function createContext<T>(
   }
 
   const context: ReactContext<T> = {
-    $$typeof: REACT_CONTEXT_TYPE,
+    $$typeof: REACT_CONTEXT_TYPE, // context对应的类型
     _calculateChangedBits: calculateChangedBits,
     // As a workaround to support multiple concurrent renderers, we categorize
     // some renderers as primary and others as secondary. We only expect
     // there to be two concurrent renderers at most: React Native (primary) and
     // Fabric (secondary); React DOM (primary) and React ART (secondary).
     // Secondary renderers store their context values on separate fields.
-    _currentValue: defaultValue,
+    _currentValue: defaultValue, // 只看这个字段即可，context当前的存储value
     _currentValue2: defaultValue,
     // Used to track how many concurrent renderers this context currently
     // supports within in a single renderer. Such as parallel server rendering.
@@ -51,8 +51,8 @@ export function createContext<T>(
   };
 
   context.Provider = {
-    $$typeof: REACT_PROVIDER_TYPE,
-    _context: context,
+    $$typeof: REACT_PROVIDER_TYPE, // Provider有其对饮的$$typeof
+    _context: context,// 保存着context的引用
   };
 
   let hasWarnedAboutUsingNestedContextConsumers = false;
@@ -140,7 +140,7 @@ export function createContext<T>(
     // $FlowFixMe: Flow complains about missing properties because it doesn't understand defineProperty
     context.Consumer = Consumer;
   } else {
-    context.Consumer = context;
+    context.Consumer = context; // Consumer其实就是context本身
   }
 
   if (__DEV__) {

@@ -179,7 +179,7 @@ export function scheduleWorkOnParentPath(
     node = node.return;
   }
 }
-// 往下找所有订阅了context的组件
+// 往下找所有订阅了context的组件，并添加更新优先级
 export function propagateContextChange(
   workInProgress: Fiber,
   context: ReactContext<mixed>,
@@ -309,7 +309,7 @@ export function prepareToReadContext(
     if (firstContext !== null) {
       if (includesSomeLane(dependencies.lanes, renderLanes)) {
         // Context list has a pending update. Mark that this fiber performed work.
-        // 使用了useContext，且Context.Provider的value有更新，标记更新
+        // todo-ldq: dependencies.lanes好像一直都收NoLanes?
         markWorkInProgressReceivedUpdate();
       }
       // Reset the work-in-progress list

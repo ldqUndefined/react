@@ -2859,19 +2859,19 @@ function updatePortalComponent(
 }
 
 let hasWarnedAboutUsingNoValuePropOnContextProvider = false;
-
+// Context.Provider的挂载/更新函数
 function updateContextProvider(
   current: Fiber | null,
   workInProgress: Fiber,
   renderLanes: Lanes,
 ) {
   const providerType: ReactProviderType<any> = workInProgress.type;
-  const context: ReactContext<any> = providerType._context;
+  const context: ReactContext<any> = providerType._context;// 拿到context的引用
 
   const newProps = workInProgress.pendingProps;
   const oldProps = workInProgress.memoizedProps;
 
-  const newValue = newProps.value;
+  const newValue = newProps.value;// context.Provider上传的value值
 
   if (__DEV__) {
     if (!('value' in newProps)) {
@@ -2892,10 +2892,13 @@ function updateContextProvider(
   pushProvider(workInProgress, newValue);
 
   if (oldProps !== null) {
+    // oldProps !== null就是非首次挂载，即更新的情况下，
     const oldValue = oldProps.value;
+    // 对比前后value是否发生变化
     const changedBits = calculateChangedBits(context, newValue, oldValue);
     if (changedBits === 0) {
       // No change. Bailout early if children are the same.
+      // 前后value没发生变化，如果children也没变化就走bailout
       if (
         oldProps.children === newProps.children &&
         !hasLegacyContextChanged()
@@ -2909,6 +2912,7 @@ function updateContextProvider(
     } else {
       // The context value changed. Search for matching consumers and schedule
       // them to update.
+      // 有变化，向下找出所有订阅了该context的组件，添加更新优先级，避免订阅了context的组件走bailout
       propagateContextChange(workInProgress, context, changedBits, renderLanes);
     }
   }
