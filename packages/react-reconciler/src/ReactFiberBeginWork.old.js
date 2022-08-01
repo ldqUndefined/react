@@ -916,8 +916,8 @@ function updateClassComponent(
     mountClassInstance(workInProgress, Component, nextProps, renderLanes);
     shouldUpdate = true;
   } else if (current === null) {
-    // todo-ldq: 实例存在却不存在current，这是啥情况？
     // In a resume, we'll already have an instance we can reuse.
+    // 当一个类组件是Error Boundary且捕获到错误时，会进入到这里
     shouldUpdate = resumeMountClassInstance(
       workInProgress,
       Component,

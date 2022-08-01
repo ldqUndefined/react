@@ -13,7 +13,7 @@ import type {CapturedValue} from './ReactCapturedValue';
 import {showErrorDialog} from './ReactFiberErrorDialog';
 import {ClassComponent} from './ReactWorkTags';
 import getComponentName from 'shared/getComponentName';
-
+// 打印捕获到的错误
 export function logCapturedError(
   boundary: Fiber,
   errorInfo: CapturedValue<mixed>,
@@ -40,6 +40,7 @@ export function logCapturedError(
           // The error is recoverable and was silenced.
           // Ignore it and don't print the stack addendum.
           // This is handy for testing error boundaries without noise.
+          // 错误被Error Boundary捕获到了，不在控制台报错
           return;
         }
         // The error is fatal. Since the silencing might have
@@ -80,6 +81,7 @@ export function logCapturedError(
       // In production, we print the error directly.
       // This will include the message, the JS stack, and anything the browser wants to show.
       // We pass the error object instead of custom message so that the browser displays the error natively.
+      // 生产环境下直接打印错误
       console['error'](error); // Don't transform to our wrapper
     }
   } catch (e) {

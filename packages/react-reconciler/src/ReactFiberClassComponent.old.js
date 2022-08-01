@@ -904,7 +904,7 @@ function mountClassInstance(
     workInProgress.flags |= Update;
   }
 }
-
+// 当类组件作为Error Boundary并捕获到错误时，会执行到这里
 function resumeMountClassInstance(
   workInProgress: Fiber,
   ctor: any,

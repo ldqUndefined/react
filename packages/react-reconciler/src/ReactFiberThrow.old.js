@@ -68,9 +68,9 @@ import {
   mergeLanes,
   pickArbitraryLane,
 } from './ReactFiberLane';
-
+// 如果浏览器支持就用weakMap，否则就降级成Map
 const PossiblyWeakMap = typeof WeakMap === 'function' ? WeakMap : Map;
-
+// 创建一个hostRoot的捕获到错误的更新
 function createRootErrorUpdate(
   fiber: Fiber,
   errorInfo: CapturedValue<mixed>,
@@ -78,9 +78,11 @@ function createRootErrorUpdate(
 ): Update<mixed> {
   const update = createUpdate(NoTimestamp, lane);
   // Unmount the root by rendering null.
+  // 更新的类型为 捕获错误导致的更新
   update.tag = CaptureUpdate;
   // Caution: React DevTools currently depends on this property
   // being called "element".
+  // 更新的内容为：子节点为null
   update.payload = {element: null};
   const error = errorInfo.value;
   update.callback = () => {
@@ -89,16 +91,18 @@ function createRootErrorUpdate(
   };
   return update;
 }
-
+// 类组件捕获错误的更新
 function createClassErrorUpdate(
   fiber: Fiber,
   errorInfo: CapturedValue<mixed>,
   lane: Lane,
 ): Update<mixed> {
   const update = createUpdate(NoTimestamp, lane);
+  // 更新的类型为 捕获错误导致的更新
   update.tag = CaptureUpdate;
   const getDerivedStateFromError = fiber.type.getDerivedStateFromError;
   if (typeof getDerivedStateFromError === 'function') {
+    // 如果实现了getDerivedStateFromError，那么更新执行的回调就是getDerivedStateFromError
     const error = errorInfo.value;
     update.payload = () => {
       logCapturedError(fiber, errorInfo);
@@ -108,6 +112,8 @@ function createClassErrorUpdate(
 
   const inst = fiber.stateNode;
   if (inst !== null && typeof inst.componentDidCatch === 'function') {
+    // 如果实现了componentDidCatch
+    // 则更新的回调为下面的函数
     update.callback = function callback() {
       if (__DEV__) {
         markFailedErrorBoundaryForHotReloading(fiber);
@@ -118,6 +124,7 @@ function createClassErrorUpdate(
         // This gets reset before we yield back to the browser.
         // TODO: Warn in strict mode if getDerivedStateFromError is
         // not defined.
+        // 如果没实现getDerivedStateFromError，标记为fail
         markLegacyErrorBoundaryAsFailed(this);
 
         // Only log here if componentDidCatch is the only error boundary method defined
@@ -125,6 +132,7 @@ function createClassErrorUpdate(
       }
       const error = errorInfo.value;
       const stack = errorInfo.stack;
+      // 执行componentDidCatch，可以拿到错误和执行栈
       this.componentDidCatch(error, {
         componentStack: stack !== null ? stack : '',
       });
@@ -133,6 +141,7 @@ function createClassErrorUpdate(
           // If componentDidCatch is the only error boundary method defined,
           // then it needs to call setState to recover from errors.
           // If no state update is scheduled then the boundary will swallow the error.
+          // 没有实现getDerivedStateFromError的话会警告
           if (!includesSomeLane(fiber.lanes, (SyncLane: Lane))) {
             console.error(
               '%s: Error boundaries should implement getDerivedStateFromError(). ' +
@@ -175,7 +184,7 @@ function attachPingListener(root: FiberRoot, wakeable: Wakeable, lanes: Lanes) {
     wakeable.then(ping, ping);
   }
 }
-
+// 向上查找是否有能够处理错误的fiber节点
 function throwException(
   root: FiberRoot,
   returnFiber: Fiber,
@@ -184,10 +193,13 @@ function throwException(
   rootRenderLanes: Lanes,
 ) {
   // The source fiber did not complete.
+  // 把抛出错误的节点标记为 未完成
   sourceFiber.flags |= Incomplete;
   // Its effect list is no longer valid.
+  // 并且因为出错了，所以清空副作用链表，避免错误执行
   sourceFiber.firstEffect = sourceFiber.lastEffect = null;
 
+  // 下面是React.lazy运行时会抛出promise的条件分支
   if (
     value !== null &&
     typeof value === 'object' &&
@@ -230,6 +242,7 @@ function throwException(
 
     // Schedule the nearest Suspense to re-render the timed out view.
     let workInProgress = returnFiber;
+    // 向上找到一个能处理该promise的Suspense组件
     do {
       if (
         workInProgress.tag === SuspenseComponent &&
@@ -239,6 +252,7 @@ function throwException(
 
         // Stash the promise on the boundary fiber. If the boundary times out, we'll
         // attach another listener to flip the boundary back to its normal state.
+        // SuspenseComponent的updateQueue是一个set，里面放着promise
         const wakeables: Set<Wakeable> = (workInProgress.updateQueue: any);
         if (wakeables === null) {
           const updateQueue = (new Set(): any);
@@ -357,19 +371,27 @@ function throwException(
   // We didn't find a boundary that could handle this type of exception. Start
   // over and traverse parent path again, this time treating the exception
   // as an error.
+  // 标记渲染错误
   renderDidError();
-
+  // 构造错误对象
   value = createCapturedValue(value, sourceFiber);
   let workInProgress = returnFiber;
+  // 通过这个循环向上找是否有能够处理错误的Error Boundary
+  // 如果找不到就会命中HostRoot的分支，会调度一个子节点为null的渲染，即白屏
   do {
     switch (workInProgress.tag) {
       case HostRoot: {
+        // 没有能处理错误的Error Boundary，调度一个白屏渲染
         const errorInfo = value;
+        // 将HostRoot标记为需要捕获错误的节点
         workInProgress.flags |= ShouldCapture;
         const lane = pickArbitraryLane(rootRenderLanes);
         workInProgress.lanes = mergeLanes(workInProgress.lanes, lane);
+        // 创建一个hostRoot捕获到错误的更新
         const update = createRootErrorUpdate(workInProgress, errorInfo, lane);
+        // 捕获错误更新专用的入队函数
         enqueueCapturedUpdate(workInProgress, update);
+        // 结束向上寻找
         return;
       }
       case ClassComponent:
@@ -377,6 +399,7 @@ function throwException(
         const errorInfo = value;
         const ctor = workInProgress.type;
         const instance = workInProgress.stateNode;
+        // 判断这个类组件是否实现了getDerivedStateFromError或componentDidCatch，以及是否在本次渲染中已经捕获过错误了
         if (
           (workInProgress.flags & DidCapture) === NoFlags &&
           (typeof ctor.getDerivedStateFromError === 'function' ||
@@ -384,16 +407,21 @@ function throwException(
               typeof instance.componentDidCatch === 'function' &&
               !isAlreadyFailedLegacyErrorBoundary(instance)))
         ) {
+          // 将这个类组件标记为 应该捕获错误
           workInProgress.flags |= ShouldCapture;
           const lane = pickArbitraryLane(rootRenderLanes);
+          // 添加更新优先级
           workInProgress.lanes = mergeLanes(workInProgress.lanes, lane);
           // Schedule the error boundary to re-render using updated state
+          // 创建一个类组件捕获了错误的更新
           const update = createClassErrorUpdate(
             workInProgress,
             errorInfo,
             lane,
           );
+          // 捕获错误更新专用的入队函数
           enqueueCapturedUpdate(workInProgress, update);
+          // 结束向上寻找
           return;
         }
         break;

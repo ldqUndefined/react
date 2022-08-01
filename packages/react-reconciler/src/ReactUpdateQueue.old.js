@@ -228,7 +228,8 @@ export function enqueueUpdate<State>(fiber: Fiber, update: Update<State>) {
     }
   }
 }
-
+// 将捕获到错误的更新插入更新队列
+// 和enqueueUpdate不同点在于只把更新插入到workInProgress节点的更新队列
 export function enqueueCapturedUpdate<State>(
   workInProgress: Fiber,
   capturedUpdate: Update<State>,
@@ -241,6 +242,7 @@ export function enqueueCapturedUpdate<State>(
   // Check if the work-in-progress queue is a clone.
   const current = workInProgress.alternate;
   if (current !== null) {
+    // 如果存在current
     const currentQueue: UpdateQueue<State> = (current.updateQueue: any);
     if (queue === currentQueue) {
       // The work-in-progress queue is the same as current. This happens when
@@ -249,11 +251,13 @@ export function enqueueCapturedUpdate<State>(
       // -progress queue, we need to clone the updates. We usually clone during
       // processUpdateQueue, but that didn't happen in this case because we
       // skipped over the parent when we bailed out.
+      // 更新队列相等说明曾经bailout过
       let newFirst = null;
       let newLast = null;
       const firstBaseUpdate = queue.firstBaseUpdate;
       if (firstBaseUpdate !== null) {
         // Loop through the updates and clone them.
+        // 存在基更新则克隆队列
         let update = firstBaseUpdate;
         do {
           const clone: Update<State> = {
@@ -284,8 +288,10 @@ export function enqueueCapturedUpdate<State>(
         }
       } else {
         // There are no base updates.
+        // 否则直接复制
         newFirst = newLast = capturedUpdate;
       }
+      // 创建一个队列对象
       queue = {
         baseState: currentQueue.baseState,
         firstBaseUpdate: newFirst,
@@ -299,6 +305,7 @@ export function enqueueCapturedUpdate<State>(
   }
 
   // Append the update to the end of the list.
+  // 不存在current则直接插入更新
   const lastBaseUpdate = queue.lastBaseUpdate;
   if (lastBaseUpdate === null) {
     queue.firstBaseUpdate = capturedUpdate;

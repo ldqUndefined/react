@@ -43,7 +43,10 @@ import {popRenderLanes} from './ReactFiberWorkLoop.old';
 import {transferActualDuration} from './ReactProfilerTimer.old';
 
 import invariant from 'shared/invariant';
-
+// 回退之前的一些逻辑
+// 当组件被标记为Incomplete时会执行这个方法
+// 对于能处理错误的节点，会返回自身
+// 对于不能处理错误的节点，会返回null，
 function unwindWork(workInProgress: Fiber, renderLanes: Lanes) {
   switch (workInProgress.tag) {
     case ClassComponent: {
@@ -52,7 +55,9 @@ function unwindWork(workInProgress: Fiber, renderLanes: Lanes) {
         popLegacyContext(workInProgress);
       }
       const flags = workInProgress.flags;
+      // 如果是一个Error Boundary，则会被添加ShouldCapture
       if (flags & ShouldCapture) {
+        // 捕获了错误的Error Boundary会去掉ShouldCapture，添加DidCapture标记
         workInProgress.flags = (flags & ~ShouldCapture) | DidCapture;
         if (
           enableProfilerTimer &&
@@ -74,6 +79,7 @@ function unwindWork(workInProgress: Fiber, renderLanes: Lanes) {
         'The root failed to unmount after an error. This is likely a bug in ' +
           'React. Please file an issue.',
       );
+      // 最差情况，被hostRoot捕获并处理错误，白屏
       workInProgress.flags = (flags & ~ShouldCapture) | DidCapture;
       return workInProgress;
     }
@@ -98,6 +104,7 @@ function unwindWork(workInProgress: Fiber, renderLanes: Lanes) {
       }
       const flags = workInProgress.flags;
       if (flags & ShouldCapture) {
+        // SuspenseComponent捕获错误的情况我现在只知道React.lazy
         workInProgress.flags = (flags & ~ShouldCapture) | DidCapture;
         // Captured a suspense effect. Re-render the boundary.
         if (

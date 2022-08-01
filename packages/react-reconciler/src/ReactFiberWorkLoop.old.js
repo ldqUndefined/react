@@ -334,7 +334,9 @@ export function getRenderTargetTime(): number {
 
 // 执行副作用时的全局变量，指向执行到的有副作用的fiber结点
 let nextEffect: Fiber | null = null;
+// 全局标记，是否存在未捕获的错误
 let hasUncaughtError = false;
+// 全局第一个未捕获的错误
 let firstUncaughtError = null;
 let legacyErrorBoundariesThatAlreadyFailed: Set<mixed> | null = null;
 // 标志位，标记本次渲染是否有Passive类型的副作用
@@ -1399,19 +1401,22 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
     ReactStrictModeWarnings.discardPendingWarnings();
   }
 }
-
+// 当渲染过程中有错误抛出时，会执行到这里
 function handleError(root, thrownValue): void {
   do {
     let erroredWork = workInProgress;
     try {
       // Reset module-level state that was set during the render phase.
+      // 重置context相关
       resetContextDependencies();
+      // 重置hook相关
       resetHooksAfterThrow();
       resetCurrentDebugFiberInDEV();
       // TODO: I found and added this missing line while investigating a
       // separate issue. Write a regression test using string refs.
       ReactCurrentOwner.current = null;
 
+      // 一个未知错误，暂不看
       if (erroredWork === null || erroredWork.return === null) {
         // Expected to be working on a non-root fiber. This is a fatal error
         // because there's no ancestor that can handle it; the root is
@@ -1435,7 +1440,7 @@ function handleError(root, thrownValue): void {
         // suspended render.
         stopProfilerTimerIfRunningAndRecordDelta(erroredWork, true);
       }
-
+      // 向上抛出错误看是否有fiber结点能够处理
       throwException(
         root,
         erroredWork.return,
@@ -1443,6 +1448,7 @@ function handleError(root, thrownValue): void {
         thrownValue,
         workInProgressRootRenderLanes,
       );
+      // 从当前节点开始顺序执行completeUnitOfWork
       completeUnitOfWork(erroredWork);
     } catch (yetAnotherThrownValue) {
       // Something in the return path also threw.
@@ -1537,7 +1543,7 @@ export function renderDidSuspendDelayIfPossible(): void {
     markRootSuspended(workInProgressRoot, workInProgressRootRenderLanes);
   }
 }
-
+// 将本次渲染标记为有错误
 export function renderDidError() {
   if (workInProgressRootExitStatus !== RootCompleted) {
     workInProgressRootExitStatus = RootErrored;
@@ -1748,7 +1754,8 @@ function performUnitOfWork(unitOfWork: Fiber): void {
 
   ReactCurrentOwner.current = null;
 }
-// 当fiber结点渲染后没有返回子节点，或者子节点都已经执行完completeUnitOfWork后，就会执行completeUnitOfWork
+// 正常流程下，当fiber结点渲染后没有返回子节点，或者子节点都已经执行完completeUnitOfWork后，就会执行completeUnitOfWork
+// 不正常流程就是有组件抛出异常后，会从抛出异常的节点开始执行completeUnitOfWork
 function completeUnitOfWork(unitOfWork: Fiber): void {
   // Attempt to complete the current unit of work, then move to the next
   // sibling. If there are no more siblings, return to the parent fiber.
@@ -1836,6 +1843,9 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
       // This fiber did not complete because something threw. Pop values off
       // the stack without entering the complete phase. If this is a boundary,
       // capture values if possible.
+      // 进入到这个分支，说明有组件报错了
+      // 如果返回的next为null，则这个组件处理不了错误
+      // 如果这个组件能处理错误，则返回自身，然后成为workInProgress，并继续beginWork流程
       const next = unwindWork(completedWork, subtreeRenderLanes);
 
       // Because this fiber did not complete, don't reset its expiration time.
@@ -1845,6 +1855,7 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
         // back here again.
         // Since we're restarting, remove anything that is not a host effect
         // from the effect tag.
+        // todo-ldq: 搞懂为啥要添加所有宿主副作用掩码
         next.flags &= HostEffectMask;
         workInProgress = next;
         return;
@@ -1869,7 +1880,9 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
 
       if (returnFiber !== null) {
         // Mark the parent fiber as incomplete and clear its effect list.
+        // 如果当前fiber处理不了错误，则继续向上，重置父节点副作用链表，因为父节点无论能不能处理错误，它下面的内容都得重新渲染
         returnFiber.firstEffect = returnFiber.lastEffect = null;
+        // 并且打上未完成标签，然后看这个父节点能否处理错误
         returnFiber.flags |= Incomplete;
       }
     }
@@ -2856,14 +2869,14 @@ function flushPassiveEffectsImpl() {
 
   return true;
 }
-
+// 判断当前Error Boundary在捕获到错误的时候是否被标记为 没能降级渲染
 export function isAlreadyFailedLegacyErrorBoundary(instance: mixed): boolean {
   return (
     legacyErrorBoundariesThatAlreadyFailed !== null &&
     legacyErrorBoundariesThatAlreadyFailed.has(instance)
   );
 }
-
+// 将当前Error Boundary标记为为没能降级渲染
 export function markLegacyErrorBoundaryAsFailed(instance: mixed) {
   if (legacyErrorBoundariesThatAlreadyFailed === null) {
     legacyErrorBoundariesThatAlreadyFailed = new Set([instance]);
@@ -2871,7 +2884,7 @@ export function markLegacyErrorBoundaryAsFailed(instance: mixed) {
     legacyErrorBoundariesThatAlreadyFailed.add(instance);
   }
 }
-
+// 当有未捕获的错误导致的更新时，会执行这个回调
 function prepareToThrowUncaughtError(error: mixed) {
   if (!hasUncaughtError) {
     hasUncaughtError = true;
