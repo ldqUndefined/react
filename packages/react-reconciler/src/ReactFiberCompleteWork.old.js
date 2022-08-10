@@ -818,6 +818,7 @@ function completeWork(
       return null;
     }
     case SuspenseComponent: {
+      // suspense上下文出栈
       popSuspenseContext(workInProgress);
       const nextState: null | SuspenseState = workInProgress.memoizedState;
 
@@ -857,6 +858,7 @@ function completeWork(
 
       if ((workInProgress.flags & DidCapture) !== NoFlags) {
         // Something suspended. Re-render with the fallback children.
+        // 当suspense捕获到promise时，返回自身重新执行渲染流程，进行降级渲染
         workInProgress.lanes = renderLanes;
         // Do not reset the effect list.
         if (
@@ -875,10 +877,11 @@ function completeWork(
           popHydrationState(workInProgress);
         }
       } else {
+        // 非首次挂载，判断之前是否降级根据current.memoizedState是否不为空
         const prevState: null | SuspenseState = current.memoizedState;
         prevDidTimeout = prevState !== null;
       }
-
+      // 下面是BlockingMode不看
       if (nextDidTimeout && !prevDidTimeout) {
         // If this subtreee is running in blocking mode we can suspend,
         // otherwise we won't suspend.
@@ -913,7 +916,7 @@ function completeWork(
           }
         }
       }
-
+      // reacdom这个分支进不去不看
       if (supportsPersistence) {
         // TODO: Only schedule updates if not prevDidTimeout.
         if (nextDidTimeout) {
@@ -925,6 +928,7 @@ function completeWork(
       }
       if (supportsMutation) {
         // TODO: Only schedule updates if these values are non equal, i.e. it changed.
+        // 无论是之前还是即将渲染fallback，都添加Update标记，会在commit阶段对promise添加监听器
         if (nextDidTimeout || prevDidTimeout) {
           // If this boundary just timed out, schedule an effect to attach a
           // retry listener to the promise. This flag is also used to hide the

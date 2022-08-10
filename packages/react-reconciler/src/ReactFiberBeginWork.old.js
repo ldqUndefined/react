@@ -570,7 +570,7 @@ function updateSimpleMemoComponent(
     renderLanes,
   );
 }
-
+// offscreen fiber 更新逻辑
 function updateOffscreenComponent(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -581,7 +581,7 @@ function updateOffscreenComponent(
 
   const prevState: OffscreenState | null =
     current !== null ? current.memoizedState : null;
-
+  // 下面分支在react.lazy触发的逻辑没进去过
   if (
     nextProps.mode === 'hidden' ||
     nextProps.mode === 'unstable-defer-without-hiding'
@@ -632,13 +632,16 @@ function updateOffscreenComponent(
   } else {
     let subtreeRenderLanes;
     if (prevState !== null) {
+      // 之前hidden过，现在visible了，设置子树优先级
       subtreeRenderLanes = mergeLanes(prevState.baseLanes, renderLanes);
       // Since we're not hidden anymore, reset the state
+      // 重置memoizedState，说明是mode:visible
       workInProgress.memoizedState = null;
     } else {
       // We weren't previously hidden, and we still aren't, so there's nothing
       // special to do. Need to push to the stack regardless, though, to avoid
       // a push/pop misalignment.
+      // 之前不是hidden，现在也不是hidden
       subtreeRenderLanes = renderLanes;
     }
     pushRenderLanes(workInProgress, subtreeRenderLanes);
@@ -1663,7 +1666,7 @@ const SUSPENDED_MARKER: SuspenseState = {
   dehydrated: null,
   retryLane: NoLane,
 };
-
+// 挂载offscreen的状态
 function mountSuspenseOffscreenState(renderLanes: Lanes): OffscreenState {
   return {
     baseLanes: renderLanes,
@@ -1680,6 +1683,7 @@ function updateSuspenseOffscreenState(
 }
 
 // TODO: Probably should inline this back
+// 判断suspense是否展示fallback的函数
 function shouldRemainOnFallback(
   suspenseContext: SuspenseContext,
   current: null | Fiber,
@@ -1696,11 +1700,14 @@ function shouldRemainOnFallback(
       // is true. More precise name might be "ForceRemainSuspenseFallback".
       // Note: This is a factoring smell. Can't remain on a fallback if there's
       // no fallback to remain on.
+      // 当存在alternate节点，并且alternate节点没有进行渲染fallback，则本次不渲染fallback
+      // 因为这次的渲染是其他更新造成的
       return false;
     }
   }
 
   // Not currently showing content. Consult the Suspense context.
+  // 当不存在alternate节点，或者之前渲染了fallback，则通过hasSuspenseContext判断
   return hasSuspenseContext(
     suspenseContext,
     (ForceSuspenseFallback: SuspenseContext),
@@ -1711,7 +1718,7 @@ function getRemainingWorkInPrimaryTree(current: Fiber, renderLanes) {
   // TODO: Should not remove render lanes that were pinged during this render
   return removeLanes(current.childLanes, renderLanes);
 }
-
+// suspense组件渲染函数
 function updateSuspenseComponent(current, workInProgress, renderLanes) {
   const nextProps = workInProgress.pendingProps;
 
@@ -1721,10 +1728,11 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
       workInProgress.flags |= DidCapture;
     }
   }
-
+  // 拿到当前suspense的执行上下文
   let suspenseContext: SuspenseContext = suspenseStackCursor.current;
 
   let showFallback = false;
+  // 已挂起的前提是有DidCapture标记
   const didSuspend = (workInProgress.flags & DidCapture) !== NoFlags;
 
   if (
@@ -1738,6 +1746,7 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
   ) {
     // Something in this boundary's subtree already suspended. Switch to
     // rendering the fallback children.
+    // 捕获到了子孙节点抛出的promise，或者应该维持fallback？
     showFallback = true;
     workInProgress.flags &= ~DidCapture;
   } else {
@@ -1751,10 +1760,13 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
       // handle the fallback state.
       // Boundaries without fallbacks or should be avoided are not considered since
       // they cannot handle preferred fallback states.
+      // 初次挂载或者之前渲染了fallback，并且组件穿了fallback字段
+      // 标记子树的上下文为至少有一个可见suspense祖先可以处理fallback
       if (
         nextProps.fallback !== undefined &&
         nextProps.unstable_avoidThisFallback !== true
       ) {
+        // 计算子树的上下文，子树获取了一个可见suspense祖先可以处理fallback
         suspenseContext = addSubtreeSuspenseContext(
           suspenseContext,
           InvisibleParentSuspenseContext,
@@ -1762,9 +1774,9 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
       }
     }
   }
-
+  // 获得子树的suspense上下文
   suspenseContext = setDefaultShallowSuspenseContext(suspenseContext);
-
+  // 子树suspense上下文入栈
   pushSuspenseContext(workInProgress, suspenseContext);
 
   // OK, the next part is confusing. We're about to reconcile the Suspense
@@ -1789,10 +1801,12 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
   // and switch to a different tree. Like a try/catch block. So we have to track
   // which branch we're currently rendering. Ideally we would model this using
   // a stack.
+  // current为空，初次挂载
   if (current === null) {
     // Initial mount
     // If we're currently hydrating, try to hydrate this boundary.
     // But only if this has a fallback.
+    // 服务端渲染相关，暂时不看
     if (nextProps.fallback !== undefined) {
       tryToClaimNextHydratableInstance(workInProgress);
       // This could've been a dehydrated suspense component.
@@ -1815,6 +1829,7 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
     const nextPrimaryChildren = nextProps.children;
     const nextFallbackChildren = nextProps.fallback;
     if (showFallback) {
+      // 需要渲染fallback时，挂载fallback节点
       const fallbackFragment = mountSuspenseFallbackChildren(
         workInProgress,
         nextPrimaryChildren,
@@ -1822,15 +1837,19 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
         renderLanes,
       );
       const primaryChildFragment: Fiber = (workInProgress.child: any);
+      // mode:hidden的offscreen的memoizedState不为空
       primaryChildFragment.memoizedState = mountSuspenseOffscreenState(
         renderLanes,
       );
+      // suspense渲染了fallback之后，memoizedState不为空
       workInProgress.memoizedState = SUSPENDED_MARKER;
+      // 返回fallback子节点
       return fallbackFragment;
     } else if (typeof nextProps.unstable_expectedLoadTime === 'number') {
       // This is a CPU-bound tree. Skip this tree and show a placeholder to
       // unblock the surrounding content. Then immediately retry after the
       // initial commit.
+      // 这个分支不看，因为开发者不传这个字段
       const fallbackFragment = mountSuspenseFallbackChildren(
         workInProgress,
         nextPrimaryChildren,
@@ -1857,6 +1876,7 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
       }
       return fallbackFragment;
     } else {
+      // suspense组件的初次挂载逻辑
       return mountSuspensePrimaryChildren(
         workInProgress,
         nextPrimaryChildren,
@@ -1868,11 +1888,13 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
 
     // If the current fiber has a SuspenseState, that means it's already showing
     // a fallback.
+    // 存在current，则走更新逻辑
     const prevState: null | SuspenseState = current.memoizedState;
     if (prevState !== null) {
       // The current tree is already showing a fallback
-
+      // 如果memoizedState不为空，则之前渲染了fallback
       // Special path for hydration
+      // 服务端渲染不看
       if (enableSuspenseServerRenderer) {
         const dehydrated = prevState.dehydrated;
         if (dehydrated !== null) {
@@ -1940,13 +1962,16 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
         workInProgress.memoizedState = SUSPENDED_MARKER;
         return fallbackChildFragment;
       } else {
+        // 之前渲染了fallback，本次不渲染fallback
         const nextPrimaryChildren = nextProps.children;
+        // 走更新真实子节点的逻辑
         const primaryChildFragment = updateSuspensePrimaryChildren(
           current,
           workInProgress,
           nextPrimaryChildren,
           renderLanes,
         );
+        // 置空suspense的memoizedState，说明本次没有渲染fallback
         workInProgress.memoizedState = null;
         return primaryChildFragment;
       }
@@ -1994,7 +2019,7 @@ function updateSuspenseComponent(current, workInProgress, renderLanes) {
     }
   }
 }
-
+// suspense组件的初次挂载逻辑，就只是加一层visible的offscreen fiber而已
 function mountSuspensePrimaryChildren(
   workInProgress,
   primaryChildren,
@@ -2005,6 +2030,7 @@ function mountSuspensePrimaryChildren(
     mode: 'visible',
     children: primaryChildren,
   };
+  // 创建一个offscreen对应的fiber,它的props.mode来区分它的模式
   const primaryChildFragment = createFiberFromOffscreen(
     primaryChildProps,
     mode,
@@ -2015,7 +2041,7 @@ function mountSuspensePrimaryChildren(
   workInProgress.child = primaryChildFragment;
   return primaryChildFragment;
 }
-
+// suspense挂载fallback子节点
 function mountSuspenseFallbackChildren(
   workInProgress,
   primaryChildren,
@@ -2023,20 +2049,25 @@ function mountSuspenseFallbackChildren(
   renderLanes,
 ) {
   const mode = workInProgress.mode;
+  // progressedPrimaryFragment是一个mode为visible的offscreen fiber
   const progressedPrimaryFragment: Fiber | null = workInProgress.child;
-
+  // 新的mode，新的props引用
   const primaryChildProps: OffscreenProps = {
     mode: 'hidden',
     children: primaryChildren,
   };
 
-  let primaryChildFragment;
-  let fallbackChildFragment;
+  let primaryChildFragment;// 直接子节点
+  let fallbackChildFragment;// fallback子节点
   if ((mode & BlockingMode) === NoMode && progressedPrimaryFragment !== null) {
     // In legacy mode, we commit the primary tree as if it successfully
     // completed, even though it's in an inconsistent state.
+    // 同步模式下，不中断渲染
+    // 直接子节点为offscreen
     primaryChildFragment = progressedPrimaryFragment;
+    // offscreen的子树更新优先级为NoLanes，即没有更新
     primaryChildFragment.childLanes = NoLanes;
+    // 更新offscreen的props为hidden模式
     primaryChildFragment.pendingProps = primaryChildProps;
 
     if (enableProfilerTimer && workInProgress.mode & ProfileMode) {
@@ -2049,7 +2080,7 @@ function mountSuspenseFallbackChildren(
       primaryChildFragment.selfBaseDuration = 0;
       primaryChildFragment.treeBaseDuration = 0;
     }
-
+    // fallback子节点为fragment，它的子元素为fallback
     fallbackChildFragment = createFiberFromFragment(
       fallbackChildren,
       mode,
@@ -2075,9 +2106,10 @@ function mountSuspenseFallbackChildren(
   fallbackChildFragment.return = workInProgress;
   primaryChildFragment.sibling = fallbackChildFragment;
   workInProgress.child = primaryChildFragment;
+  // 连接完offscreen和fragment的树形结构之后，跳过offscreen的执行，执行fragment即fallback的内容
   return fallbackChildFragment;
 }
-
+// 拷贝一个offscreen fiber
 function createWorkInProgressOffscreenFiber(
   current: Fiber,
   offscreenProps: OffscreenProps,
@@ -2086,17 +2118,19 @@ function createWorkInProgressOffscreenFiber(
   // wrapper function to constrain it.
   return createWorkInProgress(current, offscreenProps);
 }
-
+// 更新suspense的真实子节点
 function updateSuspensePrimaryChildren(
   current,
   workInProgress,
   primaryChildren,
   renderLanes,
 ) {
+  // mode为hidden的offscreen
   const currentPrimaryChildFragment: Fiber = (current.child: any);
+  // fallback的fragment子节点
   const currentFallbackChildFragment: Fiber | null =
     currentPrimaryChildFragment.sibling;
-
+  // 用新的mode:visible拷贝一个offscreen fiber
   const primaryChildFragment = createWorkInProgressOffscreenFiber(
     currentPrimaryChildFragment,
     {
@@ -2105,14 +2139,18 @@ function updateSuspensePrimaryChildren(
     },
   );
   if ((workInProgress.mode & BlockingMode) === NoMode) {
+    // 设置offscreen更新优先级，避免被跳过
     primaryChildFragment.lanes = renderLanes;
   }
   primaryChildFragment.return = workInProgress;
+  // 置空兄弟节点，因为要删除fallback
   primaryChildFragment.sibling = null;
   if (currentFallbackChildFragment !== null) {
     // Delete the fallback child fragment
     currentFallbackChildFragment.nextEffect = null;
+    // 将fallback节点标记为删除
     currentFallbackChildFragment.flags = Deletion;
+    // 连接副作用链表
     workInProgress.firstEffect = workInProgress.lastEffect = currentFallbackChildFragment;
   }
 

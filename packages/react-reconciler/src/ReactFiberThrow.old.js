@@ -220,7 +220,7 @@ function throwException(
     if (enableSchedulingProfiler) {
       markComponentSuspended(sourceFiber, wakeable);
     }
-
+    // React17的ReactDOM.render会走这个分支
     if ((sourceFiber.mode & BlockingMode) === NoMode) {
       // Reset the memoizedState to what it was before we attempted
       // to render it.
@@ -230,11 +230,12 @@ function throwException(
         sourceFiber.memoizedState = currentSource.memoizedState;
         sourceFiber.lanes = currentSource.lanes;
       } else {
+        // 如果是第一次挂载，清空更新队列和重试队列
         sourceFiber.updateQueue = null;
         sourceFiber.memoizedState = null;
       }
     }
-
+    // 是否有不可见的SuspenseComponent祖先
     const hasInvisibleParentBoundary = hasSuspenseContext(
       suspenseStackCursor.current,
       (InvisibleParentSuspenseContext: SuspenseContext),
@@ -244,6 +245,7 @@ function throwException(
     let workInProgress = returnFiber;
     // 向上找到一个能处理该promise的Suspense组件
     do {
+      // 如果遍历到的组件是SuspenseComponent且它可以捕获这个错误
       if (
         workInProgress.tag === SuspenseComponent &&
         shouldCaptureSuspense(workInProgress, hasInvisibleParentBoundary)
@@ -253,6 +255,7 @@ function throwException(
         // Stash the promise on the boundary fiber. If the boundary times out, we'll
         // attach another listener to flip the boundary back to its normal state.
         // SuspenseComponent的updateQueue是一个set，里面放着promise
+        // 把捕获到的promise放入捕获的suspenseComponet的fiber的updateQueue里
         const wakeables: Set<Wakeable> = (workInProgress.updateQueue: any);
         if (wakeables === null) {
           const updateQueue = (new Set(): any);
@@ -271,12 +274,15 @@ function throwException(
         // inside a blocking mode tree. If the Suspense is outside of it, we
         // should *not* suspend the commit.
         if ((workInProgress.mode & BlockingMode) === NoMode) {
+          // 给捕获错误的fiber添加DidCapture标记
           workInProgress.flags |= DidCapture;
+          // 给抛出错误的lazy组件对应的fiber添加ForceUpdateForLegacySuspense标记
           sourceFiber.flags |= ForceUpdateForLegacySuspense;
 
           // We're going to commit this fiber even though it didn't complete.
           // But we shouldn't call any lifecycle methods or callbacks. Remove
           // all lifecycle effect tags.
+          // 对于lazy组件，会fallback渲染，所以去掉其所有生命周期及Incomplete标记
           sourceFiber.flags &= ~(LifecycleEffectMask | Incomplete);
 
           if (sourceFiber.tag === ClassComponent) {
@@ -298,6 +304,7 @@ function throwException(
 
           // The source fiber did not complete. Mark it with Sync priority to
           // indicate that it still has pending work.
+          // 给lazy组件添加lanes避免后续渲染被跳过
           sourceFiber.lanes = mergeLanes(sourceFiber.lanes, SyncLane);
 
           // Exit without suspending.

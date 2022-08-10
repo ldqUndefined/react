@@ -64,7 +64,7 @@ export type SuspenseListRenderState = {|
   // Used to remove new effects added by the rendered item.
   lastEffect: null | Fiber,
 |};
-
+// 判断当前suspenseComponent fiber是否能捕获
 export function shouldCaptureSuspense(
   workInProgress: Fiber,
   hasInvisibleParent: boolean,
@@ -72,6 +72,7 @@ export function shouldCaptureSuspense(
   // If it was the primary children that just suspended, capture and render the
   // fallback. Otherwise, don't capture and bubble to the next boundary.
   const nextState: SuspenseState | null = workInProgress.memoizedState;
+  // 存在nextState，已经fallback了，不能捕获
   if (nextState !== null) {
     if (nextState.dehydrated !== null) {
       // A dehydrated boundary always captures.
@@ -81,19 +82,23 @@ export function shouldCaptureSuspense(
   }
   const props = workInProgress.memoizedProps;
   // In order to capture, the Suspense component must have a fallback prop.
+  // 这个suspenseComponent没有传fallback这个props，不能捕获
   if (props.fallback === undefined) {
     return false;
   }
   // Regular boundaries always capture.
+  // todo-ldq: 这个不知道哪来的，暂时不看
   if (props.unstable_avoidThisFallback !== true) {
     return true;
   }
   // If it's a boundary we should avoid, then we prefer to bubble up to the
   // parent boundary if it is currently invisible.
+  // 这个组件有个invisible的offScreen组件，不能捕获
   if (hasInvisibleParent) {
     return false;
   }
   // If the parent is not able to handle it, we must handle it.
+  // 否则能捕获
   return true;
 }
 

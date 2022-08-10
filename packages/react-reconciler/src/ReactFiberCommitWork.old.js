@@ -776,7 +776,7 @@ function commitLifeCycles(
       'likely caused by a bug in React. Please file an issue.',
   );
 }
-
+// 对offscreen组件的子元素进行操作显隐
 function hideOrUnhideAllChildren(finishedWork, isHidden) {
   if (supportsMutation) {
     // We only have the top Fiber that was inserted but we need to recurse down its
@@ -1671,7 +1671,7 @@ function commitWork(current: Fiber | null, finishedWork: Fiber): void {
       'likely caused by a bug in React. Please file an issue.',
   );
 }
-
+// suspense组件commit逻辑
 function commitSuspenseComponent(finishedWork: Fiber) {
   const newState: SuspenseState | null = finishedWork.memoizedState;
 
@@ -1688,11 +1688,12 @@ function commitSuspenseComponent(finishedWork: Fiber) {
       // second pass, but doing it this way is less complicated. This would be
       // simpler if we got rid of the effect list and traversed the tree, like
       // we're planning to do.
+      // memoizedState不为空，说明渲染fallback了，需要将真实子节点给隐藏
       const primaryChildParent: Fiber = (finishedWork.child: any);
       hideOrUnhideAllChildren(primaryChildParent, true);
     }
   }
-
+  // enableSuspenseCallback为false，不看
   if (enableSuspenseCallback && newState !== null) {
     const suspenseCallback = finishedWork.memoizedProps.suspenseCallback;
     if (typeof suspenseCallback === 'function') {
@@ -1738,20 +1739,25 @@ function commitSuspenseHydrationCallbacks(
     }
   }
 }
-
+// 对于渲染了fallback的suspense，是捕获到了promise的，在这里给节点加上对promise的监听器
+// 在promise更新后可触发重新渲染
 function attachSuspenseRetryListeners(finishedWork: Fiber) {
   // If this boundary just timed out, then it will have a set of wakeables.
   // For each wakeable, attach a listener so that when it resolves, React
   // attempts to re-render the boundary in the primary (pre-timeout) state.
   const wakeables: Set<Wakeable> | null = (finishedWork.updateQueue: any);
+  // 如果捕获到的promise不为空
   if (wakeables !== null) {
+    // 清空，避免后续重复监听
     finishedWork.updateQueue = null;
     let retryCache = finishedWork.stateNode;
+    // 添加重试集合，weakset优化性能
     if (retryCache === null) {
       retryCache = finishedWork.stateNode = new PossiblyWeakSet();
     }
     wakeables.forEach(wakeable => {
       // Memoize using the boundary fiber to prevent redundant listeners.
+      // 绑定重试的节点和promise
       let retry = resolveRetryWakeable.bind(null, finishedWork, wakeable);
       if (!retryCache.has(wakeable)) {
         if (enableSchedulerTracing) {
@@ -1759,7 +1765,9 @@ function attachSuspenseRetryListeners(finishedWork: Fiber) {
             retry = Schedule_tracing_wrap(retry);
           }
         }
+        // 添加到重试集合
         retryCache.add(wakeable);
+        // 当promise状态变化时触发重试函数
         wakeable.then(retry, retry);
       }
     });

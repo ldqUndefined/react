@@ -525,7 +525,7 @@ export function requestUpdateLane(fiber: Fiber): Lane {
 
   return lane;
 }
-
+// suspense触发重渲染时获取优先级的方法
 function requestRetryLane(fiber: Fiber) {
   // This is a fork of `requestUpdateLane` designed specifically for Suspense
   // "retries" — a special update that attempts to flip a Suspense boundary
@@ -534,6 +534,7 @@ function requestRetryLane(fiber: Fiber) {
   // Special cases
   const mode = fiber.mode;
   if ((mode & BlockingMode) === NoMode) {
+    // react17里走这个分支
     return (SyncLane: Lane);
   } else if ((mode & ConcurrentMode) === NoMode) {
     return getCurrentPriorityLevel() === ImmediateSchedulerPriority
@@ -1348,7 +1349,7 @@ export function flushControlled(fn: () => mixed): void {
     }
   }
 }
-
+// todo-ldq: 这个lane干嘛用的
 export function pushRenderLanes(fiber: Fiber, lanes: Lanes) {
   pushToStack(subtreeRenderLanesCursor, subtreeRenderLanes, fiber);
   subtreeRenderLanes = mergeLanes(subtreeRenderLanes, lanes);
@@ -3020,17 +3021,19 @@ export function pingSuspendedRoot(
   ensureRootIsScheduled(root, eventTime);
   schedulePendingInteractions(root, pingedLanes);
 }
-
+// suspense触发重新渲染的函数
 function retryTimedOutBoundary(boundaryFiber: Fiber, retryLane: Lane) {
   // The boundary fiber (a Suspense component or SuspenseList component)
   // previously was rendered in its fallback state. One of the promises that
   // suspended it has resolved, which means at least part of the tree was
   // likely unblocked. Try rendering again, at a new expiration time.
   if (retryLane === NoLane) {
+    // 这个retryLane默认就是NoLane所以会走这个分支
     retryLane = requestRetryLane(boundaryFiber);
   }
   // TODO: Special case idle priority?
   const eventTime = requestEventTime();
+  // 下面就是触发一次重新渲染的流程
   const root = markUpdateLaneFromFiberToRoot(boundaryFiber, retryLane);
   if (root !== null) {
     markRootUpdated(root, retryLane, eventTime);
@@ -3047,11 +3050,12 @@ export function retryDehydratedSuspenseBoundary(boundaryFiber: Fiber) {
   }
   retryTimedOutBoundary(boundaryFiber, retryLane);
 }
-
+// suspense绑定的重试函数
 export function resolveRetryWakeable(boundaryFiber: Fiber, wakeable: Wakeable) {
   let retryLane = NoLane; // Default
   let retryCache: WeakSet<Wakeable> | Set<Wakeable> | null;
   if (enableSuspenseServerRenderer) {
+    // 服务端渲染暂不看
     switch (boundaryFiber.tag) {
       case SuspenseComponent:
         retryCache = boundaryFiber.stateNode;
@@ -3071,12 +3075,14 @@ export function resolveRetryWakeable(boundaryFiber: Fiber, wakeable: Wakeable) {
         );
     }
   } else {
+    // 拿到promise weakset
     retryCache = boundaryFiber.stateNode;
   }
 
   if (retryCache !== null) {
     // The wakeable resolved, so we no longer need to memoize, because it will
     // never be thrown again.
+    // 当执行重试函数之后，promise的状态不会再发生变化，也就不会再触发，所以从集合里删除
     retryCache.delete(wakeable);
   }
 

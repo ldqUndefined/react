@@ -613,7 +613,7 @@ export function createFiberFromElement(
   }
   return fiber;
 }
-
+// 创建一个fragment fiber
 export function createFiberFromFragment(
   elements: ReactFragment,
   mode: TypeOfMode,
@@ -716,13 +716,14 @@ export function createFiberFromSuspenseList(
   fiber.lanes = lanes;
   return fiber;
 }
-
+// 创建一个offscreen的fiber
 export function createFiberFromOffscreen(
   pendingProps: OffscreenProps,
   mode: TypeOfMode,
   lanes: Lanes,
   key: null | string,
 ) {
+  // 传个OffscreenComponent的tag来区分fiber
   const fiber = createFiber(OffscreenComponent, pendingProps, key, mode);
   // TODO: The OffscreenComponent fiber shouldn't have a type. It has a tag.
   // This needs to be fixed in getComponentName so that it relies on the tag
@@ -730,6 +731,7 @@ export function createFiberFromOffscreen(
   if (__DEV__) {
     fiber.type = REACT_OFFSCREEN_TYPE;
   }
+  // fiber的类型为offscreen
   fiber.elementType = REACT_OFFSCREEN_TYPE;
   fiber.lanes = lanes;
   return fiber;

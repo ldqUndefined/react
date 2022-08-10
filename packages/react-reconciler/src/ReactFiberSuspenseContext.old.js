@@ -22,6 +22,7 @@ const DefaultSuspenseContext: SuspenseContext = 0b00;
 // inherited deeply down the subtree. The upper bits only affect
 // this immediate suspense boundary and gets reset each new
 // boundary or suspense list.
+// 掩码，分两位。低位可继承，高位被最近的suspense覆盖
 const SubtreeSuspenseContextMask: SuspenseContext = 0b01;
 
 // Subtree Flags:
@@ -32,18 +33,20 @@ const SubtreeSuspenseContextMask: SuspenseContext = 0b01;
 // We can use this to determine if it is desirable to trigger a fallback at
 // the parent. If not, then we might need to trigger undesirable boundaries
 // and/or suspend the commit to avoid hiding the parent content.
+// fiber树上存在一个 展示了fallback 或 还没挂载的 Suspense祖先
 export const InvisibleParentSuspenseContext: SubtreeSuspenseContext = 0b01;
 
 // Shallow Flags:
 
 // ForceSuspenseFallback can be used by SuspenseList to force newly added
 // items into their fallback state during one of the render passes.
+// 用ForceSuspenseFallback计算时，强制渲染fallback
 export const ForceSuspenseFallback: ShallowSuspenseContext = 0b10;
-
+// suspense的上下文栈
 export const suspenseStackCursor: StackCursor<SuspenseContext> = createCursor(
   DefaultSuspenseContext,
 );
-
+// 是否有可用的suspense上下文
 export function hasSuspenseContext(
   parentContext: SuspenseContext,
   flag: SuspenseContext,
@@ -63,21 +66,21 @@ export function setShallowSuspenseContext(
 ): SuspenseContext {
   return (parentContext & SubtreeSuspenseContextMask) | shallowContext;
 }
-
+// 添加子树suspense上下文
 export function addSubtreeSuspenseContext(
   parentContext: SuspenseContext,
   subtreeContext: SubtreeSuspenseContext,
 ): SuspenseContext {
   return parentContext | subtreeContext;
 }
-
+// suspense上下文入栈
 export function pushSuspenseContext(
   fiber: Fiber,
   newContext: SuspenseContext,
 ): void {
   push(suspenseStackCursor, newContext, fiber);
 }
-
+// suspense上下文出栈
 export function popSuspenseContext(fiber: Fiber): void {
   pop(suspenseStackCursor, fiber);
 }
