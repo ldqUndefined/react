@@ -347,9 +347,9 @@ let rootWithPendingPassiveEffects: FiberRoot | null = null;
 let pendingPassiveEffectsRenderPriority: ReactPriorityLevel = NoSchedulerPriority;
 // Passive类型副作用的优先级
 let pendingPassiveEffectsLanes: Lanes = NoLanes;
-// 存放要执行的有Passive类型副作用的Effect对象及其fiber对象数组，用于后续挂载执行
+// 存放要执行的有Passive类型副作用的Effect对象及其fiber对象数组，用于后续挂载执行，执行挂载
 let pendingPassiveHookEffectsMount: Array<HookEffect | Fiber> = [];
-// 存放要执行的有Passive类型副作用的Effect对象及其fiber对象数组，用于后续写在执行
+// 存放要执行的有Passive类型副作用的Effect对象及其fiber对象数组，用于后续写在执行，执行销毁
 let pendingPassiveHookEffectsUnmount: Array<HookEffect | Fiber> = [];
 let pendingPassiveProfilerEffects: Array<Fiber> = [];
 
@@ -2614,13 +2614,14 @@ export function enqueuePendingPassiveProfilerEffect(fiber: Fiber): void {
     }
   }
 }
-
+// effect 创建函数执行的入队
 export function enqueuePendingPassiveHookEffectMount(
   fiber: Fiber,
   effect: HookEffect,
 ): void {
   pendingPassiveHookEffectsMount.push(effect, fiber);
   if (!rootDoesHavePassiveEffects) {
+    // 如果还未发起调度，则发起一次调度
     rootDoesHavePassiveEffects = true;
     scheduleCallback(NormalSchedulerPriority, () => {
       flushPassiveEffects();
@@ -2628,7 +2629,7 @@ export function enqueuePendingPassiveHookEffectMount(
     });
   }
 }
-
+// effect 销毁函数执行的入队
 export function enqueuePendingPassiveHookEffectUnmount(
   fiber: Fiber,
   effect: HookEffect,
@@ -2642,6 +2643,7 @@ export function enqueuePendingPassiveHookEffectUnmount(
     }
   }
   if (!rootDoesHavePassiveEffects) {
+    // 如果还未发起调度，则发起一次调度
     rootDoesHavePassiveEffects = true;
     scheduleCallback(NormalSchedulerPriority, () => {
       flushPassiveEffects();

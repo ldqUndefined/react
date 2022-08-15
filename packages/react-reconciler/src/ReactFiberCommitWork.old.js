@@ -317,8 +317,10 @@ function commitHookEffectListUnmount(tag: number, finishedWork: Fiber) {
       if ((effect.tag & tag) === tag) {
         // Unmount
         const destroy = effect.destroy;
+        // 置空destroy，这个字段会在后续的commitHookEffectListMount里重新赋值
         effect.destroy = undefined;
         if (destroy !== undefined) {
+          // 销毁函数的执行
           destroy();
         }
       }
@@ -328,15 +330,19 @@ function commitHookEffectListUnmount(tag: number, finishedWork: Fiber) {
 }
 // 函数组件在commit的第三个阶段执行的内容，useLayoutEffect
 function commitHookEffectListMount(tag: number, finishedWork: Fiber) {
+  // updateQueue.lastEffect是一个环形链表
   const updateQueue: FunctionComponentUpdateQueue | null = (finishedWork.updateQueue: any);
   const lastEffect = updateQueue !== null ? updateQueue.lastEffect : null;
   if (lastEffect !== null) {
+    // 拿到effect链表头
     const firstEffect = lastEffect.next;
     let effect = firstEffect;
     do {
       if ((effect.tag & tag) === tag) {
         // Mount
+        // 拿到useLayoutEffect的回调
         const create = effect.create;
+        // 执行并收集销毁函数
         effect.destroy = create();
 
         if (__DEV__) {
@@ -372,6 +378,7 @@ function commitHookEffectListMount(tag: number, finishedWork: Fiber) {
           }
         }
       }
+      // 执行下一个effect
       effect = effect.next;
     } while (effect !== firstEffect);
   }
@@ -381,6 +388,7 @@ function schedulePassiveEffects(finishedWork: Fiber) {
   const updateQueue: FunctionComponentUpdateQueue | null = (finishedWork.updateQueue: any);
   const lastEffect = updateQueue !== null ? updateQueue.lastEffect : null;
   if (lastEffect !== null) {
+    //updateQueue是一个环形链表，updateQueue.lastEffect指向最后一个副作用,lastEffect.next为第一个副作用
     const firstEffect = lastEffect.next;
     let effect = firstEffect;
     do {
@@ -389,6 +397,7 @@ function schedulePassiveEffects(finishedWork: Fiber) {
         (tag & HookPassive) !== NoHookEffect &&
         (tag & HookHasEffect) !== NoHookEffect
       ) {
+        // 如果这个effect对象上有HookHasEffect和HookPassive标记，则加入effect回调/销毁函数执行的数组里
         enqueuePendingPassiveHookEffectUnmount(finishedWork, effect);
         enqueuePendingPassiveHookEffectMount(finishedWork, effect);
       }

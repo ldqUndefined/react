@@ -6,7 +6,7 @@
  *
  * @flow
  */
-
+// hook的副作用类型
 export type HookFlags = number;
 
 export const NoFlags = /*  */ 0b000;
