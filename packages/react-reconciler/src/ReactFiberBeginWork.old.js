@@ -382,7 +382,7 @@ function updateForwardRef(
   reconcileChildren(current, workInProgress, nextChildren, renderLanes);
   return workInProgress.child;
 }
-
+// memo更新函数
 function updateMemoComponent(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -392,6 +392,7 @@ function updateMemoComponent(
   renderLanes: Lanes,
 ): null | Fiber {
   if (current === null) {
+    // 拿到memo包裹的组件类型
     const type = Component.type;
     if (
       isSimpleFunctionComponent(type) &&
@@ -406,6 +407,8 @@ function updateMemoComponent(
       // If this is a plain function component without default props,
       // and with only the default shallow comparison, we upgrade it
       // to a SimpleMemoComponent to allow fast path updates.
+      // 如果是简单memo类型的话，更新fiber的tag
+      // 后续更新可以走优化分支
       workInProgress.tag = SimpleMemoComponent;
       workInProgress.type = resolvedType;
       if (__DEV__) {
@@ -433,6 +436,7 @@ function updateMemoComponent(
         );
       }
     }
+    // 直接创建一个函数组件子fiber
     const child = createFiberFromTypeAndProps(
       Component.type,
       null,
@@ -441,6 +445,7 @@ function updateMemoComponent(
       workInProgress.mode,
       renderLanes,
     );
+    // 函数组件fiber和memo fiber用同个ref
     child.ref = workInProgress.ref;
     child.return = workInProgress;
     workInProgress.child = child;
@@ -464,17 +469,21 @@ function updateMemoComponent(
   if (!includesSomeLane(updateLanes, renderLanes)) {
     // This will be the props with resolved defaultProps,
     // unlike current.memoizedProps which will be the unresolved ones.
+    // 因为memo不会触发更新，所以不会有lanes，会命中这个分支判断是否浅相等
     const prevProps = currentChild.memoizedProps;
     // Default to shallow comparison
     let compare = Component.compare;
     compare = compare !== null ? compare : shallowEqual;
     if (compare(prevProps, nextProps) && current.ref === workInProgress.ref) {
+      // 命中的话就bailout
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     }
   }
   // React DevTools reads this flag.
   workInProgress.flags |= PerformedWork;
+  // 需要更新，直接拷贝一个子节点
   const newChild = createWorkInProgress(currentChild, nextProps);
+  // 设置ref
   newChild.ref = workInProgress.ref;
   newChild.return = workInProgress;
   workInProgress.child = newChild;
@@ -557,6 +566,7 @@ function updateSimpleMemoComponent(
       } else if ((current.flags & ForceUpdateForLegacySuspense) !== NoFlags) {
         // This is a special case that only exists for legacy mode.
         // See https://github.com/facebook/react/pull/19216.
+        // react.lazy组件
         didReceiveUpdate = true;
       }
     }
@@ -655,13 +665,15 @@ function updateOffscreenComponent(
 // ourselves to this constraint, though. If the behavior diverges, we should
 // fork the function.
 const updateLegacyHiddenComponent = updateOffscreenComponent;
-
+// Fragment更新函数
 function updateFragment(
   current: Fiber | null,
   workInProgress: Fiber,
   renderLanes: Lanes,
 ) {
+  // props就是children
   const nextChildren = workInProgress.pendingProps;
+  // 直接diff
   reconcileChildren(current, workInProgress, nextChildren, renderLanes);
   return workInProgress.child;
 }

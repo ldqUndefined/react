@@ -24,12 +24,14 @@ import {
   REACT_SUSPENSE_LIST_TYPE,
 } from 'shared/ReactSymbols';
 import isValidElementType from 'shared/isValidElementType';
-
+// 判断ReactElement类型
 export function typeOf(object: any) {
   if (typeof object === 'object' && object !== null) {
+    // 一般来说这个$$typeof值为REACT_ELEMENT_TYPE，只有REACT_PORTAL_TYPE是例外
     const $$typeof = object.$$typeof;
     switch ($$typeof) {
       case REACT_ELEMENT_TYPE:
+        // 一般来说这个type就是我们写jsx时的组件
         const type = object.type;
 
         switch (type) {
@@ -38,8 +40,10 @@ export function typeOf(object: any) {
           case REACT_STRICT_MODE_TYPE:
           case REACT_SUSPENSE_TYPE:
           case REACT_SUSPENSE_LIST_TYPE:
+            // 如果type是数字类型，则是React内置类型
             return type;
           default:
+            // 否则type是对象类型，则根据type.$$typeof判断
             const $$typeofType = type && type.$$typeof;
 
             switch ($$typeofType) {
@@ -48,8 +52,10 @@ export function typeOf(object: any) {
               case REACT_LAZY_TYPE:
               case REACT_MEMO_TYPE:
               case REACT_PROVIDER_TYPE:
+                // type是对象类型的，则是React内置类型
                 return $$typeofType;
               default:
+                // 否则是字符串，或者引用的类型的，则是宿主节点如div的字符串、函数组件、类组件
                 return $$typeof;
             }
         }
@@ -105,6 +111,7 @@ export function isConcurrentMode(object: any) {
   }
   return false;
 }
+// 下面都是判断组件类型的函数
 export function isContextConsumer(object: any) {
   return typeOf(object) === REACT_CONTEXT_TYPE;
 }

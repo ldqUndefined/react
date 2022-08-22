@@ -488,7 +488,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       return existing;
     }
   }
-
+  // Fragment相关更新函数
   function updateFragment(
     returnFiber: Fiber,
     current: Fiber | null,

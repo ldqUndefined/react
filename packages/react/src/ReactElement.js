@@ -143,6 +143,8 @@ function warnIfStringRefCannotBeAutoConverted(config) {
  * indicating filename, line number, and/or other information.
  * @internal
  */
+// ReactElement就是一个有$$typeof字段为REACT_ELEMENT_TYPE的对象，仅此而已
+// ReactElement就是JSX在编译后的运行时会直接生成的对象，包含组件的类型type、key、ref、props
 const ReactElement = function(type, key, ref, self, source, owner, props) {
   const element = {
     // This tag allows us to uniquely identify this as a React Element
