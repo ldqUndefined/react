@@ -14,7 +14,7 @@ type ValueTracker = {|
 |};
 type WrapperState = {_valueTracker?: ?ValueTracker, ...};
 type ElementWithValueTracker = HTMLInputElement & WrapperState;
-
+// 判断DOM实例是否checkbox或者radio
 function isCheckable(elem: HTMLInputElement) {
   const type = elem.type;
   const nodeName = elem.nodeName;
@@ -24,15 +24,15 @@ function isCheckable(elem: HTMLInputElement) {
     (type === 'checkbox' || type === 'radio')
   );
 }
-
+// 获取tracker
 function getTracker(node: ElementWithValueTracker) {
   return node._valueTracker;
 }
-
+// 删除tracker
 function detachTracker(node: ElementWithValueTracker) {
   node._valueTracker = null;
 }
-
+// 从表单DOM实例上拿到当前值
 function getValueFromNode(node: HTMLInputElement): string {
   let value = '';
   if (!node) {
@@ -40,14 +40,16 @@ function getValueFromNode(node: HTMLInputElement): string {
   }
 
   if (isCheckable(node)) {
+    // 如果是checkbox或radio，就取checked的值
     value = node.checked ? 'true' : 'false';
   } else {
+    // 否则就返回表单元素的value字段
     value = node.value;
   }
 
   return value;
 }
-
+// 追踪表单上的值
 function trackValueOnNode(node: any): ?ValueTracker {
   const valueField = isCheckable(node) ? 'checked' : 'value';
   const descriptor = Object.getOwnPropertyDescriptor(
@@ -102,7 +104,7 @@ function trackValueOnNode(node: any): ?ValueTracker {
   };
   return tracker;
 }
-
+// 追踪一个表单DOM实例
 export function track(node: ElementWithValueTracker) {
   if (getTracker(node)) {
     return;
@@ -111,7 +113,7 @@ export function track(node: ElementWithValueTracker) {
   // TODO: Once it's just Fiber we can move this to node._wrapperState
   node._valueTracker = trackValueOnNode(node);
 }
-
+// 判断表单DOM实例的value是否发生了变化
 export function updateValueIfChanged(node: ElementWithValueTracker) {
   if (!node) {
     return false;
@@ -132,7 +134,7 @@ export function updateValueIfChanged(node: ElementWithValueTracker) {
   }
   return false;
 }
-
+// 停止跟踪
 export function stopTracking(node: ElementWithValueTracker) {
   const tracker = getTracker(node);
   if (tracker) {

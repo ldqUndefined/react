@@ -153,7 +153,7 @@ const STYLE = 'style';
 
 let eventsEnabled: ?boolean = null;
 let selectionInformation: null | SelectionInformation = null;
-
+// 判断节点是否需要auto-focus
 function shouldAutoFocusHostComponent(type: string, props: Props): boolean {
   switch (type) {
     case 'button':
@@ -258,7 +258,7 @@ export function resetAfterCommit(containerInfo: Container): void {
   eventsEnabled = null;
   selectionInformation = null;
 }
-
+// DOM渲染器的创建实例方法
 export function createInstance(
   type: string,
   props: Props,
@@ -286,24 +286,27 @@ export function createInstance(
   } else {
     parentNamespace = ((hostContext: any): HostContextProd);
   }
+  // 创建DOM实例
   const domElement: Instance = createElement(
     type,
     props,
     rootContainerInstance,
     parentNamespace,
   );
+  // 增加一个DOM实例到fiber的引用字段
   precacheFiberNode(internalInstanceHandle, domElement);
+  // 增加一个DOM实例到props的引用
   updateFiberProps(domElement, props);
   return domElement;
 }
-
+// DOM实例初次插入儿子结点的方法
 export function appendInitialChild(
   parentInstance: Instance,
   child: Instance | TextInstance,
 ): void {
   parentInstance.appendChild(child);
 }
-
+// 初始化完毕儿子结点
 export function finalizeInitialChildren(
   domElement: Instance,
   type: string,
@@ -314,7 +317,7 @@ export function finalizeInitialChildren(
   setInitialProperties(domElement, type, props, rootContainerInstance);
   return shouldAutoFocusHostComponent(type, props);
 }
-
+// 返回DOM节点要更新的内容
 export function prepareUpdate(
   domElement: Instance,
   type: string,
@@ -429,7 +432,7 @@ export function commitUpdate(
   // 更新DOM属性
   updateProperties(domElement, updatePayload, type, oldProps, newProps);
 }
-
+// 重置文本内容
 export function resetTextContent(domElement: Instance): void {
   setTextContent(domElement, '');
 }

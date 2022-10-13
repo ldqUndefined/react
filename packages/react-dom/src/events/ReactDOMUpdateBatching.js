@@ -21,6 +21,7 @@ import {enableDiscreteEventFlushingChange} from 'shared/ReactFeatureFlags';
 let batchedUpdatesImpl = function(fn, bookkeeping) {
   return fn(bookkeeping);
 };
+// 其实就是传入参数，执行函数
 let discreteUpdatesImpl = function(fn, a, b, c, d) {
   return fn(a, b, c, d);
 };
@@ -29,7 +30,7 @@ let batchedEventUpdatesImpl = batchedUpdatesImpl;
 
 let isInsideEventHandler = false;
 let isBatchingEventUpdates = false;
-
+// todo-ldq: 受控啥逻辑？
 function finishEventHandler() {
   // Here we wait until all updates have propagated, which is important
   // when using controlled components within layers:
@@ -59,7 +60,7 @@ export function batchedUpdates(fn, bookkeeping) {
     finishEventHandler();
   }
 }
-
+// 批量执行时间更新？
 export function batchedEventUpdates(fn, a, b) {
   if (isBatchingEventUpdates) {
     // If we are currently inside another batch, we need to wait until it
@@ -74,7 +75,7 @@ export function batchedEventUpdates(fn, a, b) {
     finishEventHandler();
   }
 }
-
+// 离散更新包装器？
 export function discreteUpdates(fn, a, b, c, d) {
   const prevIsInsideEventHandler = isInsideEventHandler;
   isInsideEventHandler = true;

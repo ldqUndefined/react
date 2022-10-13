@@ -8,7 +8,7 @@
  */
 
 import {canUseDOM} from 'shared/ExecutionEnvironment';
-
+// 检测浏览器是否支持addEventListener的第三个参数的passive字段
 export let passiveBrowserEventsSupported = false;
 
 // Check if browser support events with passive listeners

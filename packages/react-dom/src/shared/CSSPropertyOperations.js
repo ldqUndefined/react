@@ -56,7 +56,7 @@ export function createDangerousStringForStyles(styles) {
  * @param {DOMElement} node
  * @param {object} styles
  */
-// 更新DOM节点属性
+// 设置DOM节点style属性
 export function setValueForStyles(node, styles) {
   const style = node.style;
   for (let styleName in styles) {
@@ -69,7 +69,7 @@ export function setValueForStyles(node, styles) {
         warnValidStyle(styleName, styles[styleName]);
       }
     }
-    // 拿到转换后的value值
+    // 拿到转换后style的value值
     const styleValue = dangerousStyleValue(
       styleName,
       styles[styleName],

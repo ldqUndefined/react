@@ -159,7 +159,7 @@ export function postMountWrapper(element: Element, props: Object) {
     }
   }
 }
-
+// 恢复textArea的受控状态
 export function restoreControlledState(element: Element, props: Object) {
   // DOM component is still mounted; update
   updateWrapper(element, props);

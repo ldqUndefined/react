@@ -11,7 +11,7 @@ import type {Props} from '../client/ReactDOMHostConfig';
 
 import invariant from 'shared/invariant';
 import {getFiberCurrentPropsFromNode} from '../client/ReactDOMComponentTree';
-
+// 判断DOM节点是否可交互类型
 function isInteractive(tag: string): boolean {
   return (
     tag === 'button' ||
@@ -20,7 +20,7 @@ function isInteractive(tag: string): boolean {
     tag === 'textarea'
   );
 }
-
+// 判断某些鼠标时间是否被禁用了，如被disabled的button等
 function shouldPreventMouseEvent(
   name: string,
   type: string,
@@ -49,6 +49,7 @@ function shouldPreventMouseEvent(
  * @param {string} registrationName Name of listener (e.g. `onClick`).
  * @return {?function} The stored callback.
  */
+// 获取对应fiber对应事件名的props
 export default function getListener(
   inst: Fiber,
   registrationName: string,
@@ -63,7 +64,9 @@ export default function getListener(
     // Work in progress.
     return null;
   }
+  // 拿到事件名对应的props
   const listener = props[registrationName];
+  // 判断某些事件回调是否被禁用了
   if (shouldPreventMouseEvent(registrationName, inst.type, props)) {
     return null;
   }
@@ -73,5 +76,6 @@ export default function getListener(
     registrationName,
     typeof listener,
   );
+  // 返回该事件名对应的props
   return listener;
 }

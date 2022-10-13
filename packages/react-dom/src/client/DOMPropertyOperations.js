@@ -140,20 +140,26 @@ export function setValueForProperty(
   value: mixed,
   isCustomComponentTag: boolean,
 ) {
+  // 拿到属性映射信息
   const propertyInfo = getPropertyInfo(name);
   if (shouldIgnoreAttribute(name, propertyInfo, isCustomComponentTag)) {
+    // 忽略
     return;
   }
   if (shouldRemoveAttribute(name, value, propertyInfo, isCustomComponentTag)) {
+    // 移除
     value = null;
   }
   // If the prop isn't in the special list, treat it as a simple attribute.
+  // 自定义标签或者没找到属性映射信息
   if (isCustomComponentTag || propertyInfo === null) {
     if (isAttributeNameSafe(name)) {
       const attributeName = name;
       if (value === null) {
+        // 移除属性
         node.removeAttribute(attributeName);
       } else {
+        // 设置属性
         node.setAttribute(
           attributeName,
           enableTrustedTypesIntegration ? (value: any) : '' + (value: any),
@@ -164,13 +170,17 @@ export function setValueForProperty(
   }
   const {mustUseProperty} = propertyInfo;
   if (mustUseProperty) {
+    // 拿到DOM属性名
     const {propertyName} = propertyInfo;
     if (value === null) {
+      // 如果值为空，则通过类型判断
       const {type} = propertyInfo;
+      // 如果是BOOLEAN类型，则设置为false，否则为空字符串
       (node: any)[propertyName] = type === BOOLEAN ? false : '';
     } else {
       // Contrary to `setAttribute`, object properties are properly
       // `toString`ed by IE8/9.
+      // 否则直接设置值
       (node: any)[propertyName] = value;
     }
     return;
@@ -178,6 +188,7 @@ export function setValueForProperty(
   // The rest are treated as attributes with special cases.
   const {attributeName, attributeNamespace} = propertyInfo;
   if (value === null) {
+    // 不是必须使用属性值的类型，在value为null时直接移除
     node.removeAttribute(attributeName);
   } else {
     const {type} = propertyInfo;
@@ -185,6 +196,7 @@ export function setValueForProperty(
     if (type === BOOLEAN || (type === OVERLOADED_BOOLEAN && value === true)) {
       // If attribute type is boolean, we know for sure it won't be an execution sink
       // and we won't require Trusted Type here.
+      // 布尔类型设置即可
       attributeValue = '';
     } else {
       // `setAttribute` with objects becomes only `[object]` in IE8/9,
@@ -192,6 +204,7 @@ export function setValueForProperty(
       if (enableTrustedTypesIntegration) {
         attributeValue = (value: any);
       } else {
+        // 否则拼接成字符串
         attributeValue = '' + (value: any);
       }
       if (propertyInfo.sanitizeURL) {
@@ -201,6 +214,7 @@ export function setValueForProperty(
     if (attributeNamespace) {
       node.setAttributeNS(attributeNamespace, attributeName, attributeValue);
     } else {
+      // 设置属性
       node.setAttribute(attributeName, attributeValue);
     }
   }

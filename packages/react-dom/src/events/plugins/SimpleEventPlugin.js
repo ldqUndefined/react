@@ -48,7 +48,7 @@ import getEventCharCode from '../getEventCharCode';
 import {IS_CAPTURE_PHASE} from '../EventSystemFlags';
 
 import {enableCreateEventHandleAPI} from 'shared/ReactFeatureFlags';
-
+// 根据事件名收集简单事件的回调
 function extractEvents(
   dispatchQueue: DispatchQueue,
   domEventName: DOMEventName,
@@ -58,12 +58,14 @@ function extractEvents(
   eventSystemFlags: EventSystemFlags,
   targetContainer: EventTarget,
 ): void {
+  // 根据原生事件名拿到react事件名
   const reactName = topLevelEventsToReactNames.get(domEventName);
   if (reactName === undefined) {
     return;
   }
   let SyntheticEventCtor = SyntheticEvent;
   let reactEventType: string = domEventName;
+  // 根据事件名获取对应的合成事件构造函数
   switch (domEventName) {
     case 'keypress':
       // Firefox creates a keypress event for function keys too. This removes
@@ -186,6 +188,7 @@ function extractEvents(
     // In the past, React has always bubbled them, but this can be surprising.
     // We're going to try aligning closer to the browser behavior by not bubbling
     // them in React either. We'll start by not bubbling onScroll, and then expand.
+    // 如果不是捕获阶段且事件名为scroll，则只处理触发事件的节点
     const accumulateTargetOnly =
       !inCapturePhase &&
       // TODO: ideally, we'd eventually add all events from
@@ -193,7 +196,7 @@ function extractEvents(
       // Then we can remove this special list.
       // This is a breaking change that can wait until React 18.
       domEventName === 'scroll';
-
+    // 在fiber树上收集事件名对应的props
     const listeners = accumulateSinglePhaseListeners(
       targetInst,
       reactName,
@@ -201,8 +204,10 @@ function extractEvents(
       inCapturePhase,
       accumulateTargetOnly,
     );
+    // 如果存在监听该事件DOM节点
     if (listeners.length > 0) {
       // Intentionally create event lazily.
+      // 构建一个react合成事件
       const event = new SyntheticEventCtor(
         reactName,
         reactEventType,
@@ -210,6 +215,7 @@ function extractEvents(
         nativeEvent,
         nativeEventTarget,
       );
+      // 并收集到队列中
       dispatchQueue.push({event, listeners});
     }
   }

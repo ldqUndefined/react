@@ -119,7 +119,7 @@ type QueuedHydrationTarget = {|
   lanePriority: LanePriority,
 |};
 const queuedExplicitHydrationTargets: Array<QueuedHydrationTarget> = [];
-
+// 离散时间队列？
 export function hasQueuedDiscreteEvents(): boolean {
   return queuedDiscreteEvents.length > 0;
 }
@@ -218,7 +218,7 @@ function createQueuedReplayableEvent(
     targetContainers: [targetContainer],
   };
 }
-
+// 离散事件入队？
 export function queueDiscreteEvent(
   blockedOn: null | Container | SuspenseInstance,
   domEventName: DOMEventName,

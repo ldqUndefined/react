@@ -136,13 +136,13 @@ import {OffscreenLane, SomeRetryLane} from './ReactFiberLane';
 import {resetChildFibers} from './ReactChildFiber.old';
 import {createScopeInstance} from './ReactFiberScope.old';
 import {transferActualDuration} from './ReactProfilerTimer.old';
-
+// 给fiber添加Update标记
 function markUpdate(workInProgress: Fiber) {
   // Tag the fiber with an update effect. This turns a Placement into
   // a PlacementAndUpdate.
   workInProgress.flags |= Update;
 }
-
+// 给fiber添加Ref标记
 function markRef(workInProgress: Fiber) {
   workInProgress.flags |= Ref;
 }
@@ -165,6 +165,7 @@ if (supportsMutation) {
     let node = workInProgress.child;
     while (node !== null) {
       if (node.tag === HostComponent || node.tag === HostText) {
+        // 找到了DOM子节点，插入
         appendInitialChild(parent, node.stateNode);
       } else if (enableFundamentalAPI && node.tag === FundamentalComponent) {
         appendInitialChild(parent, node.stateNode.instance);
@@ -173,19 +174,24 @@ if (supportsMutation) {
         // down its children. Instead, we'll get insertions from each child in
         // the portal directly.
       } else if (node.child !== null) {
+        // 当前节点不是hostComponent，继续往下找
         node.child.return = node;
         node = node.child;
         continue;
       }
       if (node === workInProgress) {
+        // 回到自己，结束
         return;
       }
       while (node.sibling === null) {
         if (node.return === null || node.return === workInProgress) {
+          // 回到自己，结束
           return;
         }
+        // 往上找
         node = node.return;
       }
+      // 往兄弟节点找
       node.sibling.return = node.return;
       node = node.sibling;
     }
@@ -194,6 +200,7 @@ if (supportsMutation) {
   updateHostContainer = function(workInProgress: Fiber) {
     // Noop
   };
+  // 打包后是走这个分支
   updateHostComponent = function(
     current: Fiber,
     workInProgress: Fiber,
@@ -219,6 +226,7 @@ if (supportsMutation) {
     // TODO: Experiencing an error where oldProps is null. Suggests a host
     // component is hitting the resume path. Figure out why. Possibly
     // related to `hidden`.
+    // 拿到要更新的diff数组
     const updatePayload = prepareUpdate(
       instance,
       type,
@@ -228,9 +236,11 @@ if (supportsMutation) {
       currentHostContext,
     );
     // TODO: Type this specific to this type of component.
+    // diff更新数组挂载到hostComponent的updateQueue上
     workInProgress.updateQueue = (updatePayload: any);
     // If the update payload indicates that there is a change or if there
     // is a new ref we mark this as an update. All the work is done in commitWork.
+    // diff数组不为空，则标记为更新，在commit阶段要执行副作用
     if (updatePayload) {
       markUpdate(workInProgress);
     }
@@ -711,6 +721,7 @@ function completeWork(
         );
 
         if (current.ref !== workInProgress.ref) {
+          // 如果前后ref引用不同，则标记更新ref
           markRef(workInProgress);
         }
       } else {
@@ -754,9 +765,9 @@ function completeWork(
             currentHostContext,
             workInProgress,
           );
-          // 把当前DOM结点的所有儿子结点插入到当前结点下
+          // 把当前DOM结点的所有DOM实例儿子结点插入到当前结点下
           appendAllChildren(instance, workInProgress, false, false);
-
+          // hostComponent类型的fiber.stateNode引用DOM实例
           workInProgress.stateNode = instance;
 
           // Certain renderers require commit-time effects for initial mount.
@@ -772,12 +783,14 @@ function completeWork(
               currentHostContext,
             )
           ) {
+            // 如果是需要autofucos的，打上更新标记
             markUpdate(workInProgress);
           }
         }
 
         if (workInProgress.ref !== null) {
           // If there is a ref on a host node we need to schedule a callback
+          // 如果本次渲染节点有ref属性，也要标记更新
           markRef(workInProgress);
         }
       }

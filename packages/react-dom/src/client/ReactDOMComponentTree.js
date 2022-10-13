@@ -42,7 +42,7 @@ const internalContainerInstanceKey = '__reactContainer$' + randomKey;
 const internalEventHandlersKey = '__reactEvents$' + randomKey;
 const internalEventHandlerListenersKey = '__reactListeners$' + randomKey;
 const internalEventHandlesSetKey = '__reactHandles$' + randomKey;
-
+// 把fiber存在DOM实例的某个字段上
 export function precacheFiberNode(
   hostInst: Fiber,
   node: Instance | TextInstance | SuspenseInstance | ReactScopeInstance,
@@ -69,10 +69,12 @@ export function isContainerMarkedAsRoot(node: Container): boolean {
 // pass the Container node as the targetNode, you will not actually get the
 // HostRoot back. To get to the HostRoot, you need to pass a child of it.
 // The same thing applies to Suspense boundaries.
+// 获取DOM结点最近的fiber节点
 export function getClosestInstanceFromNode(targetNode: Node): null | Fiber {
   let targetInst = (targetNode: any)[internalInstanceKey];
   if (targetInst) {
     // Don't return HostRoot or SuspenseComponent here.
+    // 一般来说都是走这里，DOM节点和fiber节点互相引用
     return targetInst;
   }
   // If the direct event target isn't a React owned DOM node, we need to look
@@ -171,6 +173,7 @@ export function getInstanceFromNode(node: Node): Fiber | null {
  * Given a ReactDOMComponent or ReactDOMTextComponent, return the corresponding
  * DOM node.
  */
+// 拿到fiber对应的DOM实例
 export function getNodeFromInstance(inst: Fiber): Instance | TextInstance {
   if (inst.tag === HostComponent || inst.tag === HostText) {
     // In Fiber this, is just the state node right now. We assume it will be
@@ -182,20 +185,20 @@ export function getNodeFromInstance(inst: Fiber): Instance | TextInstance {
   // invariant for a missing parent, which is super confusing.
   invariant(false, 'getNodeFromInstance: Invalid argument.');
 }
-
+// 拿到DOM节点对应的props
 export function getFiberCurrentPropsFromNode(
   node: Instance | TextInstance | SuspenseInstance,
 ): Props {
   return (node: any)[internalPropsKey] || null;
 }
-
+// 更新DOM实例对props的引用
 export function updateFiberProps(
   node: Instance | TextInstance | SuspenseInstance,
   props: Props,
 ): void {
   (node: any)[internalPropsKey] = props;
 }
-
+// 拿到事件代理元素的事件代理key集合
 export function getEventListenerSet(node: EventTarget): Set<string> {
   let elementListenerSet = (node: any)[internalEventHandlersKey];
   if (elementListenerSet === undefined) {

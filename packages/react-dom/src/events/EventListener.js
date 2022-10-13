@@ -6,7 +6,7 @@
  *
  * @flow
  */
-
+// 添加冒泡事件监听器
 export function addEventBubbleListener(
   target: EventTarget,
   eventType: string,
@@ -15,7 +15,7 @@ export function addEventBubbleListener(
   target.addEventListener(eventType, listener, false);
   return listener;
 }
-
+// 添加捕获事件监听器
 export function addEventCaptureListener(
   target: EventTarget,
   eventType: string,

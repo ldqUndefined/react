@@ -25,7 +25,7 @@ import type {KnownReactSyntheticEvent} from '../ReactSyntheticEventType';
 
 import {HostComponent, HostText} from 'react-reconciler/src/ReactWorkTags';
 import {getNearestMountedFiber} from 'react-reconciler/src/ReactFiberTreeReflection';
-
+// 注册出入类型的事件
 function registerEvents() {
   registerDirectEvent('onMouseEnter', ['mouseout', 'mouseover']);
   registerDirectEvent('onMouseLeave', ['mouseout', 'mouseover']);
@@ -40,6 +40,7 @@ function registerEvents() {
  * browser from outside will not fire a `mouseout` event. In this case, we use
  * the `mouseover` top-level event.
  */
+// 鼠标进出相关事件分离
 function extractEvents(
   dispatchQueue: DispatchQueue,
   domEventName: DOMEventName,

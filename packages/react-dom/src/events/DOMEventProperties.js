@@ -24,12 +24,12 @@ import {
 } from 'shared/ReactTypes';
 
 import {enableCreateEventHandleAPI} from 'shared/ReactFeatureFlags';
-
+// 原生事件名映射到react事件名的map
 export const topLevelEventsToReactNames: Map<
   DOMEventName,
   string | null,
 > = new Map();
-
+// 原生事件优先级map
 const eventPriorities = new Map();
 
 // We store most of the events in this module in pairs of two strings so we can re-use
@@ -42,6 +42,7 @@ const eventPriorities = new Map();
 // Lastly, we ignore prettier so we can keep the formatting sane.
 
 // prettier-ignore
+// 简单离散事件的事件名映射，原生事件名->React事件名
 const discreteEventPairsForSimpleEventPlugin = [
   ('cancel': DOMEventName), 'cancel',
   ('click': DOMEventName), 'click',
@@ -78,7 +79,7 @@ const discreteEventPairsForSimpleEventPlugin = [
   ('touchstart': DOMEventName), 'touchStart',
   ('volumechange': DOMEventName), 'volumeChange',
 ];
-
+// 其他离散事件？
 const otherDiscreteEvents: Array<DOMEventName> = [
   'change',
   'selectionchange',
@@ -97,6 +98,7 @@ if (enableCreateEventHandleAPI) {
 }
 
 // prettier-ignore
+// 用户阻塞事件的事件名映射，原生事件名->React事件名
 const userBlockingPairsForSimpleEventPlugin: Array<string | DOMEventName> = [
   ('drag': DOMEventName), 'drag',
   ('dragenter': DOMEventName), 'dragEnter',
@@ -116,6 +118,7 @@ const userBlockingPairsForSimpleEventPlugin: Array<string | DOMEventName> = [
 ];
 
 // prettier-ignore
+// 连续触发事件的事件名映射，原生事件名->React事件名
 const continuousPairsForSimpleEventPlugin: Array<string | DOMEventName> = [
   ('abort': DOMEventName), 'abort',
   (ANIMATION_END: DOMEventName), 'animationEnd',
@@ -156,6 +159,7 @@ const continuousPairsForSimpleEventPlugin: Array<string | DOMEventName> = [
  *
  * and registers them.
  */
+// 注册简单事件
 function registerSimplePluginEventsAndSetTheirPriorities(
   eventTypes: Array<DOMEventName | string>,
   priority: EventPriority,
@@ -167,16 +171,21 @@ function registerSimplePluginEventsAndSetTheirPriorities(
   // if we only use three arrays to process all the categories of
   // instead of tuples.
   for (let i = 0; i < eventTypes.length; i += 2) {
+    // 拿到原生事件名
     const topEvent = ((eventTypes[i]: any): DOMEventName);
+    // 拿到react事件名
     const event = ((eventTypes[i + 1]: any): string);
     const capitalizedEvent = event[0].toUpperCase() + event.slice(1);
+    // 变成冒泡事件名如onClick
     const reactName = 'on' + capitalizedEvent;
+    // 设置优先级
     eventPriorities.set(topEvent, priority);
+    // 设置事件名映射
     topLevelEventsToReactNames.set(topEvent, reactName);
     registerTwoPhaseEvent(reactName, [topEvent]);
   }
 }
-
+// 给事件设优先级
 function setEventPriorities(
   eventTypes: Array<DOMEventName>,
   priority: EventPriority,
@@ -185,7 +194,7 @@ function setEventPriorities(
     eventPriorities.set(eventTypes[i], priority);
   }
 }
-
+// 根据事件名拿到优先级
 export function getEventPriorityForPluginSystem(
   domEventName: DOMEventName,
 ): EventPriority {
@@ -212,19 +221,23 @@ export function getEventPriorityForListenerSystem(
   }
   return ContinuousEvent;
 }
-
+// 注册简单事件
 export function registerSimpleEvents() {
+  // 注册离散事件
   registerSimplePluginEventsAndSetTheirPriorities(
     discreteEventPairsForSimpleEventPlugin,
     DiscreteEvent,
   );
+  // 注册用户阻塞事件
   registerSimplePluginEventsAndSetTheirPriorities(
     userBlockingPairsForSimpleEventPlugin,
     UserBlockingEvent,
   );
+  // 注册连续事件
   registerSimplePluginEventsAndSetTheirPriorities(
     continuousPairsForSimpleEventPlugin,
     ContinuousEvent,
   );
+  // 下面没代理？
   setEventPriorities(otherDiscreteEvents, DiscreteEvent);
 }

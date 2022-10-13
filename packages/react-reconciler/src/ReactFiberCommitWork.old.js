@@ -1067,7 +1067,7 @@ function emptyPortalContainer(current: Fiber) {
   const emptyChildSet = createContainerChildSet(containerInfo);
   replaceContainerChildren(containerInfo, emptyChildSet);
 }
-
+// 主要是hostRoot和hostPortal的操作
 function commitContainer(finishedWork: Fiber) {
   if (!supportsPersistence) {
     return;

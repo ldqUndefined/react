@@ -8,7 +8,7 @@
  */
 
 import invariant from 'shared/invariant';
-
+// 带try/catch块去执行，如果事件回调抛出错误能捕获到
 function invokeGuardedCallbackProd<A, B, C, D, E, F, Context>(
   name: string | null,
   func: (a: A, b: B, c: C, d: D, e: E, f: F) => mixed,

@@ -22,6 +22,7 @@ import {canUseDOM} from 'shared/ExecutionEnvironment';
  * @internal
  * @license Modernizr 3.0.0pre (Custom Build) | MIT
  */
+// 判断宿主环境是否支持某一事件，源码里只判断了input事件
 function isEventSupported(eventNameSuffix: string): boolean {
   if (!canUseDOM) {
     return false;

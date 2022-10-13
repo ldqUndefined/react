@@ -14,7 +14,7 @@ const hasReadOnlyValue = {
   reset: true,
   submit: true,
 };
-
+// 判断input是否受控且没传onChange
 export function checkControlledValueProps(
   tagName: string,
   props: Object,

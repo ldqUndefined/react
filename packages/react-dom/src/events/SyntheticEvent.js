@@ -25,6 +25,7 @@ function functionThatReturnsFalse() {
 
 // This is intentionally a factory so that we have different returned constructors.
 // If we had a single constructor, it would be megamorphic and engines would deopt.
+// 合成事件工厂函数，根据传入的事件接口返回不同内容的构造函数
 function createSyntheticEvent(Interface: EventInterfaceType) {
   /**
    * Synthetic events are dispatched by event plugins, typically in response to a
@@ -39,6 +40,7 @@ function createSyntheticEvent(Interface: EventInterfaceType) {
    * normalizing browser quirks. Subclasses do not necessarily have to implement a
    * DOM interface; custom application-specific events can also subclass this.
    */
+  // 实现了DOM lv3的api并磨平浏览器差异
   function SyntheticBaseEvent(
     reactName: string | null,
     reactEventType: string,
@@ -46,52 +48,68 @@ function createSyntheticEvent(Interface: EventInterfaceType) {
     nativeEvent: {[propName: string]: mixed},
     nativeEventTarget: null | EventTarget,
   ) {
+    // react事件名
     this._reactName = reactName;
+    // 当前执行事件回调时的fiber
     this._targetInst = targetInst;
+    // 真实事件名
     this.type = reactEventType;
+    // 原生事件对象
     this.nativeEvent = nativeEvent;
+    // 原生触发事件的DOM target
     this.target = nativeEventTarget;
+    // 当前执行回调的DOM
     this.currentTarget = null;
 
+    // 下面是磨平字段在浏览器间的差异
     for (const propName in Interface) {
       if (!Interface.hasOwnProperty(propName)) {
         continue;
       }
+      // 拿到事件接口对应的值
       const normalize = Interface[propName];
+      // 如果接口对应字段是 “真值”，接口里的“真值”都是函数，用来磨平浏览器差异
       if (normalize) {
+        // 获取磨平了浏览器差异后的值
         this[propName] = normalize(nativeEvent);
       } else {
+        // 如果接口对应不是“真值”，那就用原生事件对象对应的值
         this[propName] = nativeEvent[propName];
       }
     }
-
+    // 磨平defaultPrevented的浏览器差异，即磨平e.defaultPrevented和e.returnValue的表现
     const defaultPrevented =
       nativeEvent.defaultPrevented != null
         ? nativeEvent.defaultPrevented
         : nativeEvent.returnValue === false;
     if (defaultPrevented) {
+      // 如果在处理事件时已经被阻止默认操作了，则调用isDefaultPrevented一直返回true
       this.isDefaultPrevented = functionThatReturnsTrue;
     } else {
+      // 如果在处理事件时没有被阻止过默认操作，则先用返回false的函数
       this.isDefaultPrevented = functionThatReturnsFalse;
     }
+    // 默认执行时间时，还没有被阻止继续传播，所以调用isPropagationStopped返回false
     this.isPropagationStopped = functionThatReturnsFalse;
     return this;
   }
 
   Object.assign(SyntheticBaseEvent.prototype, {
     preventDefault: function() {
+      // 调用后设置defaultPrevented
       this.defaultPrevented = true;
       const event = this.nativeEvent;
       if (!event) {
         return;
       }
-
+      // 下面是磨平e.preventDefault()和e.returnValue=false的浏览器差异，并在原生事件上执行
       if (event.preventDefault) {
         event.preventDefault();
         // $FlowFixMe - flow is not aware of `unknown` in IE
       } else if (typeof event.returnValue !== 'unknown') {
         event.returnValue = false;
       }
+      // 然后后续回调判断时都会返回true
       this.isDefaultPrevented = functionThatReturnsTrue;
     },
 
@@ -100,7 +118,7 @@ function createSyntheticEvent(Interface: EventInterfaceType) {
       if (!event) {
         return;
       }
-
+      // 磨平e.stopPropagation()和e.calcelBubble = true的差异，并在原生事件上执行
       if (event.stopPropagation) {
         event.stopPropagation();
         // $FlowFixMe - flow is not aware of `unknown` in IE
@@ -112,7 +130,7 @@ function createSyntheticEvent(Interface: EventInterfaceType) {
         // IE specific).
         event.cancelBubble = true;
       }
-
+      // 然后后续判断时都会返回true，已停止传播
       this.isPropagationStopped = functionThatReturnsTrue;
     },
 
@@ -121,6 +139,7 @@ function createSyntheticEvent(Interface: EventInterfaceType) {
      * them back into the pool. This allows a way to hold onto a reference that
      * won't be added back into the pool.
      */
+    // react16的保留事件方法，react17里已无效
     persist: function() {
       // Modern event system doesn't use pooling.
     },
@@ -132,6 +151,7 @@ function createSyntheticEvent(Interface: EventInterfaceType) {
      */
     isPersistent: functionThatReturnsTrue,
   });
+  // 返回根据接口类型包装的合成事件构造器
   return SyntheticBaseEvent;
 }
 
@@ -139,6 +159,9 @@ function createSyntheticEvent(Interface: EventInterfaceType) {
  * @interface Event
  * @see http://www.w3.org/TR/DOM-Level-3-Events/
  */
+// 下面的所有接口Interface，会用来作为对应事件类型的对象接口
+// 字段值为0的从原生事件对象上取，字段值为函数的为磨平浏览器差异的方法
+// 会使用原生事件的相关字段进行磨平
 const EventInterface = {
   eventPhase: 0,
   bubbles: 0,
@@ -316,6 +339,7 @@ const normalizeKey = {
  * Only special keys supported, all others depend on keyboard layout or browser
  * @see https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent#Key_names
  */
+// keydown/keyup对code做可读性转换，这样就可以在react事件props上直接使用了，可读性强
 const translateToKey = {
   '8': 'Backspace',
   '9': 'Tab',

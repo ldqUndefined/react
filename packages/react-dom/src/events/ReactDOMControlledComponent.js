@@ -18,7 +18,7 @@ import {
 let restoreImpl = null;
 let restoreTarget = null;
 let restoreQueue = null;
-
+// 恢复状态
 function restoreStateOfTarget(target: Node) {
   // We perform this translation at the end of the event loop so that we
   // always receive the correct fiber here
@@ -35,7 +35,9 @@ function restoreStateOfTarget(target: Node) {
   const stateNode = internalInstance.stateNode;
   // Guard against Fiber being unmounted.
   if (stateNode) {
+    // 拿到节点的props
     const props = getFiberCurrentPropsFromNode(stateNode);
+    // 执行恢复
     restoreImpl(internalInstance.stateNode, internalInstance.type, props);
   }
 }
@@ -57,11 +59,11 @@ export function enqueueStateRestore(target: Node): void {
     restoreTarget = target;
   }
 }
-
+// 判断是否需要恢复状态
 export function needsStateRestore(): boolean {
   return restoreTarget !== null || restoreQueue !== null;
 }
-
+// 如果有需要恢复状态的，就恢复
 export function restoreStateIfNeeded() {
   if (!restoreTarget) {
     return;

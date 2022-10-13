@@ -35,7 +35,7 @@ let didWarnValueDefaultValue = false;
 let didWarnCheckedDefaultChecked = false;
 let didWarnControlledToUncontrolled = false;
 let didWarnUncontrolledToControlled = false;
-
+// 判断组件是否受控
 function isControlled(props) {
   const usesChecked = props.type === 'checkbox' || props.type === 'radio';
   return usesChecked ? props.checked != null : props.value != null;
@@ -57,7 +57,7 @@ function isControlled(props) {
  *
  * See http://www.w3.org/TR/2012/WD-html5-20121025/the-input-element.html
  */
-
+// 获取传给真实DOM实例的props属性
 export function getHostProps(element: Element, props: Object) {
   const node = ((element: any): InputWithWrapperState);
   const checked = props.checked;
@@ -114,7 +114,7 @@ export function initWrapperState(element: Element, props: Object) {
 
   const node = ((element: any): InputWithWrapperState);
   const defaultValue = props.defaultValue == null ? '' : props.defaultValue;
-
+  // 包装器？存节点的defaultChecked和defaultValue，以及组件是否受控
   node._wrapperState = {
     initialChecked:
       props.checked != null ? props.checked : props.defaultChecked,
@@ -124,7 +124,7 @@ export function initWrapperState(element: Element, props: Object) {
     controlled: isControlled(props),
   };
 }
-
+// 更新checked属性
 export function updateChecked(element: Element, props: Object) {
   const node = ((element: any): InputWithWrapperState);
   const checked = props.checked;
@@ -167,7 +167,7 @@ export function updateWrapper(element: Element, props: Object) {
       didWarnControlledToUncontrolled = true;
     }
   }
-
+  // 更新checked值
   updateChecked(element, props);
 
   const value = getToStringValue(props.value);
@@ -175,6 +175,7 @@ export function updateWrapper(element: Element, props: Object) {
 
   if (value != null) {
     if (type === 'number') {
+      // type为number的input输入框做恢复
       if (
         (value === 0 && node.value === '') ||
         // We explicitly want to coerce to number here if possible.
@@ -184,11 +185,13 @@ export function updateWrapper(element: Element, props: Object) {
         node.value = toString((value: any));
       }
     } else if (node.value !== toString((value: any))) {
+      // 其他类型input做恢复
       node.value = toString((value: any));
     }
   } else if (type === 'submit' || type === 'reset') {
     // Submit/reset inputs need the attribute removed completely to avoid
     // blank-text buttons.
+    // 某些trick？
     node.removeAttribute('value');
     return;
   }
@@ -206,6 +209,7 @@ export function updateWrapper(element: Element, props: Object) {
     //  1. The value React property
     //  2. The defaultValue React property
     //  3. Otherwise there should be no change
+    // 传了value和defaultValue的需要更新defaultValue
     if (props.hasOwnProperty('value')) {
       setDefaultValue(node, props.type, value);
     } else if (props.hasOwnProperty('defaultValue')) {
@@ -226,6 +230,7 @@ export function updateWrapper(element: Element, props: Object) {
     // When syncing the checked attribute, it only changes when it needs
     // to be removed, such as transitioning from a checkbox into a text input
     if (props.checked == null && props.defaultChecked != null) {
+      // defaultChecked属性更新
       node.defaultChecked = !!props.defaultChecked;
     }
   }
@@ -342,7 +347,7 @@ export function postMountWrapper(
     node.name = name;
   }
 }
-
+// 恢复input的受控状态
 export function restoreControlledState(element: Element, props: Object) {
   const node = ((element: any): InputWithWrapperState);
   updateWrapper(node, props);
@@ -405,6 +410,7 @@ function updateNamedCousins(rootNode, props) {
 // when the user is inputting text
 //
 // https://github.com/facebook/react/issues/7253
+// 设置defaultValue避免浏览器默认行为
 export function setDefaultValue(
   node: InputWithWrapperState,
   type: ?string,

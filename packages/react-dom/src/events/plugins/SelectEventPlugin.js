@@ -30,7 +30,7 @@ import {accumulateTwoPhaseListeners} from '../DOMPluginEventSystem';
 
 const skipSelectionChangeEvent =
   canUseDOM && 'documentMode' in document && document.documentMode <= 11;
-
+// 注册选择相关事件
 function registerEvents() {
   registerTwoPhaseEvent('onSelect', [
     'focusout',

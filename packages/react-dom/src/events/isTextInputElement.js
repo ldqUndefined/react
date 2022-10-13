@@ -10,6 +10,7 @@
 /**
  * @see http://www.whatwg.org/specs/web-apps/current-work/multipage/the-input-element.html#input-type-attr-summary
  */
+// 如果是input元素，判断它的type是否支持的类型
 const supportedInputTypes: {[key: string]: true | void, ...} = {
   color: true,
   date: true,
@@ -27,7 +28,7 @@ const supportedInputTypes: {[key: string]: true | void, ...} = {
   url: true,
   week: true,
 };
-
+// 判断是否文本输入类DOM元素
 function isTextInputElement(elem: ?HTMLElement): boolean {
   const nodeName = elem && elem.nodeName && elem.nodeName.toLowerCase();
 

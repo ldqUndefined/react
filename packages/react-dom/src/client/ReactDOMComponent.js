@@ -285,7 +285,7 @@ export function ensureListeningTo(
     );
   }
 }
-
+// 根据root拿到document
 function getOwnerDocumentFromRootContainer(
   rootContainerElement: Element | Document,
 ): Document {
@@ -308,7 +308,7 @@ export function trapClickOnNonInteractiveElement(node: HTMLElement) {
   // TODO: Only do this for the relevant Safaris maybe?
   node.onclick = noop;
 }
-
+// 这是DOM节点初始属性
 function setInitialDOMProperties(
   tag: string,
   domElement: Element,
@@ -316,8 +316,10 @@ function setInitialDOMProperties(
   nextProps: Object,
   isCustomComponentTag: boolean,
 ): void {
+  // 循环设置props上的属性
   for (const propKey in nextProps) {
     if (!nextProps.hasOwnProperty(propKey)) {
+      // 不是对象自身属性，跳过
       continue;
     }
     const nextProp = nextProps[propKey];
@@ -330,10 +332,12 @@ function setInitialDOMProperties(
         }
       }
       // Relies on `updateStylesByID` not mutating `styleUpdates`.
+      // 设置节点style属性
       setValueForStyles(domElement, nextProp);
     } else if (propKey === DANGEROUSLY_SET_INNER_HTML) {
       const nextHtml = nextProp ? nextProp[HTML] : undefined;
       if (nextHtml != null) {
+        // 设置innerHtml
         setInnerHTML(domElement, nextHtml);
       }
     } else if (propKey === CHILDREN) {
@@ -401,7 +405,7 @@ function updateDOMProperties(
     }
   }
 }
-
+// 创建DOM实例的方法
 export function createElement(
   type: string,
   props: Object,
@@ -438,6 +442,7 @@ export function createElement(
     if (type === 'script') {
       // Create the script via .innerHTML so its "parser-inserted" flag is
       // set to true and it does not execute
+      // script类型特殊处理，避免触发script的执行
       const div = ownerDocument.createElement('div');
       if (__DEV__) {
         if (enableTrustedTypesIntegration && !didWarnScriptTags) {
@@ -456,6 +461,7 @@ export function createElement(
       domElement = div.removeChild(firstChild);
     } else if (typeof props.is === 'string') {
       // $FlowIssue `createElement` should be updated for Web Components
+      // 有is字段的，兼容web component
       domElement = ownerDocument.createElement(type, {is: props.is});
     } else {
       // Separate else branch instead of using `props.is || undefined` above because of a Firefox bug.
@@ -471,6 +477,7 @@ export function createElement(
       // See https://github.com/facebook/react/issues/13222
       // and https://github.com/facebook/react/issues/14239
       if (type === 'select') {
+        // select类型特殊处理
         const node = ((domElement: any): HTMLSelectElement);
         if (props.multiple) {
           node.multiple = true;
@@ -517,7 +524,7 @@ export function createTextNode(
     text,
   );
 }
-
+// 设置初始化的属性
 export function setInitialProperties(
   domElement: Element,
   tag: string,
@@ -531,6 +538,7 @@ export function setInitialProperties(
 
   // TODO: Make sure that we check isMounted before firing any of these events.
   let props: Object;
+  // 下面条件分支主要做非代理的事件绑定到对应元素
   switch (tag) {
     case 'dialog':
       listenToNonDelegatedEvent('cancel', domElement);
@@ -620,7 +628,7 @@ export function setInitialProperties(
   }
 
   assertValidProps(tag, props);
-
+  // 这是DOM节点初始属性
   setInitialDOMProperties(
     tag,
     domElement,
@@ -658,6 +666,7 @@ export function setInitialProperties(
 }
 
 // Calculate the diff between the two objects.
+// 判断前后props变化，返回数组，对应更新的键名和值
 export function diffProperties(
   domElement: Element,
   tag: string,
@@ -673,6 +682,7 @@ export function diffProperties(
 
   let lastProps: Object;
   let nextProps: Object;
+  // 根据标签类型，获取转换后的props
   switch (tag) {
     case 'input':
       lastProps = ReactDOMInputGetHostProps(domElement, lastRawProps);
@@ -712,15 +722,18 @@ export function diffProperties(
   let propKey;
   let styleName;
   let styleUpdates = null;
+  // 这面这个循环把之前传了props，下次没传props的情况的置空
   for (propKey in lastProps) {
     if (
       nextProps.hasOwnProperty(propKey) ||
       !lastProps.hasOwnProperty(propKey) ||
       lastProps[propKey] == null
     ) {
+      // nextProps有的，或者不是lastProps自己属性， 或者之前设置了空值的，略过
       continue;
     }
     if (propKey === STYLE) {
+      // 之前传了style，下次没传，那就要把之前的属性都置空
       const lastStyle = lastProps[propKey];
       for (styleName in lastStyle) {
         if (lastStyle.hasOwnProperty(styleName)) {
@@ -749,9 +762,11 @@ export function diffProperties(
     } else {
       // For all other deleted properties we add it to the queue. We use
       // the allowed property list in the commit phase instead.
+      // 被react代理的属性都置空
       (updatePayload = updatePayload || []).push(propKey, null);
     }
   }
+  // 下面循环把下次要更新的props更新收集
   for (propKey in nextProps) {
     const nextProp = nextProps[propKey];
     const lastProp = lastProps != null ? lastProps[propKey] : undefined;
@@ -760,6 +775,7 @@ export function diffProperties(
       nextProp === lastProp ||
       (nextProp == null && lastProp == null)
     ) {
+      // 如果不是nextProps自身属性，或者前后字段值相同，或同为(null || undefined)的情况时略过
       continue;
     }
     if (propKey === STYLE) {
@@ -772,6 +788,7 @@ export function diffProperties(
       }
       if (lastProp) {
         // Unset styles on `lastProp` but not on `nextProp`.
+        // 上次传了style，下次没传style或下次传空的情况
         for (styleName in lastProp) {
           if (
             lastProp.hasOwnProperty(styleName) &&
@@ -784,6 +801,7 @@ export function diffProperties(
           }
         }
         // Update styles that changed since `lastProp`.
+        // style前后都传了，但是值不同的情况，收集更新
         for (styleName in nextProp) {
           if (
             nextProp.hasOwnProperty(styleName) &&
@@ -797,6 +815,7 @@ export function diffProperties(
         }
       } else {
         // Relies on `updateStylesByID` not mutating `styleUpdates`.
+        // 上次没传style的情况
         if (!styleUpdates) {
           if (!updatePayload) {
             updatePayload = [];
@@ -806,10 +825,13 @@ export function diffProperties(
         styleUpdates = nextProp;
       }
     } else if (propKey === DANGEROUSLY_SET_INNER_HTML) {
+      // 键名为dangerouslySetInnerHTML的情况
       const nextHtml = nextProp ? nextProp[HTML] : undefined;
       const lastHtml = lastProp ? lastProp[HTML] : undefined;
       if (nextHtml != null) {
+        // 本次传的不为空
         if (lastHtml !== nextHtml) {
+          // 上次和本次不同，收集本次更新
           (updatePayload = updatePayload || []).push(propKey, nextHtml);
         }
       } else {
@@ -817,6 +839,7 @@ export function diffProperties(
         // inserted already.
       }
     } else if (propKey === CHILDREN) {
+      // 健名为children的情况，如果children为数字或字符串，收集更新
       if (typeof nextProp === 'string' || typeof nextProp === 'number') {
         (updatePayload = updatePayload || []).push(propKey, '' + nextProp);
       }
@@ -834,6 +857,7 @@ export function diffProperties(
         if (!enableEagerRootListeners) {
           ensureListeningTo(rootContainerElement, propKey, domElement);
         } else if (propKey === 'onScroll') {
+          // 收集非代理事件scroll
           listenToNonDelegatedEvent('scroll', domElement);
         }
       }
@@ -855,6 +879,7 @@ export function diffProperties(
     } else {
       // For any other property we always add it to the queue and then we
       // filter it out using the allowed property list during the commit.
+      // 其余情况，都直接收集更新
       (updatePayload = updatePayload || []).push(propKey, nextProp);
     }
   }
@@ -862,6 +887,7 @@ export function diffProperties(
     if (__DEV__) {
       validateShorthandPropertyCollisionInDev(styleUpdates, nextProps[STYLE]);
     }
+    // 如果style对象不为空，直接收集到style键对应的更新
     (updatePayload = updatePayload || []).push(STYLE, styleUpdates);
   }
   return updatePayload;
@@ -1317,7 +1343,7 @@ export function warnForInsertedHydratedText(
     );
   }
 }
-
+// 恢复受控状态的实现
 export function restoreControlledState(
   domElement: Element,
   tag: string,

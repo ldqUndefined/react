@@ -53,7 +53,7 @@ const useFallbackCompositionData =
 
 const SPACEBAR_CODE = 32;
 const SPACEBAR_CHAR = String.fromCharCode(SPACEBAR_CODE);
-
+// 注册输入前事件
 function registerEvents() {
   registerTwoPhaseEvent('onBeforeInput', [
     'compositionend',

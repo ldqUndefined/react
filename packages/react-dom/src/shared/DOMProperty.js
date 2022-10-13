@@ -13,35 +13,42 @@ type PropertyType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 // A reserved attribute.
 // It is handled by React separately and shouldn't be written to the DOM.
+// 保留属性，由React处理，不写入DOM
 export const RESERVED = 0;
 
 // A simple string attribute.
 // Attributes that aren't in the filter are presumed to have this type.
+// 字符串类型属性
 export const STRING = 1;
 
 // A string attribute that accepts booleans in React. In HTML, these are called
 // "enumerated" attributes with "true" and "false" as possible values.
 // When true, it should be set to a "true" string.
 // When false, it should be set to a "false" string.
+// 在React中用boolean，但实际上在真实DOM中用字符串“true”和"false"的属性
 export const BOOLEANISH_STRING = 2;
 
 // A real boolean attribute.
 // When true, it should be present (set either to an empty string or its name).
 // When false, it should be omitted.
+// 在真实DOM上就是布尔值的属性
 export const BOOLEAN = 3;
 
 // An attribute that can be used as a flag as well as with a value.
 // When true, it should be present (set either to an empty string or its name).
 // When false, it should be omitted.
 // For any other value, should be present with that value.
+// 在真实DOM上除了"true"和"false"还有其他可选值的属性
 export const OVERLOADED_BOOLEAN = 4;
 
 // An attribute that must be numeric or parse as a numeric.
 // When falsy, it should be removed.
+// 数字类型属性
 export const NUMERIC = 5;
 
 // An attribute that must be positive numeric or parse as a positive numeric.
 // When falsy, it should be removed.
+// 正数类型属性
 export const POSITIVE_NUMERIC = 6;
 
 export type PropertyInfo = {|
@@ -89,16 +96,18 @@ export function isAttributeNameSafe(attributeName: string): boolean {
   }
   return false;
 }
-// 判断属性是否可忽略的逻辑，基本就是忽略事件on开头的，因为事件委托了
+// 判断DOM属性是否可忽略的逻辑，基本就是忽略事件on开头的，因为事件委托了
 export function shouldIgnoreAttribute(
   name: string,
   propertyInfo: PropertyInfo | null,
   isCustomComponentTag: boolean,
 ): boolean {
   if (propertyInfo !== null) {
+    // 如果是React保留字段，忽略
     return propertyInfo.type === RESERVED;
   }
   if (isCustomComponentTag) {
+    // 如果是自定义的tag，不忽略
     return false;
   }
   if (
@@ -106,8 +115,10 @@ export function shouldIgnoreAttribute(
     (name[0] === 'o' || name[0] === 'O') &&
     (name[1] === 'n' || name[1] === 'N')
   ) {
+    // 事件开头的，忽略
     return true;
   }
+  // 其他都不忽略
   return false;
 }
 
@@ -140,7 +151,7 @@ export function shouldRemoveAttributeWithWarning(
       return false;
   }
 }
-
+// 是否从DOM节点上移除属性
 export function shouldRemoveAttribute(
   name: string,
   value: mixed,
@@ -148,6 +159,7 @@ export function shouldRemoveAttribute(
   isCustomComponentTag: boolean,
 ): boolean {
   if (value === null || typeof value === 'undefined') {
+    // 如果是null或者undefined，则移除
     return true;
   }
   if (
@@ -192,22 +204,27 @@ export function shouldRemoveAttribute(
 
     switch (propertyInfo.type) {
       case BOOLEAN:
+        // 如果是布尔类型，则假值移除
         return !value;
       case OVERLOADED_BOOLEAN:
+        // 如果是布尔重载类型，则值为false时才移除
         return value === false;
       case NUMERIC:
+        // 如果是数字类型，则不是数字的移除
         return isNaN(value);
       case POSITIVE_NUMERIC:
+        // 如果是正数类型，则不是数字或者小于1的移除
         return isNaN(value) || (value: any) < 1;
     }
   }
+  // 否则不移除
   return false;
 }
-
+// 拿到名称对应的record？
 export function getPropertyInfo(name: string): PropertyInfo | null {
   return properties.hasOwnProperty(name) ? properties[name] : null;
 }
-
+// 属性信息记录-构造函数
 function PropertyInfoRecord(
   name: string,
   type: PropertyType,
@@ -217,6 +234,7 @@ function PropertyInfoRecord(
   sanitizeURL: boolean,
   removeEmptyString: boolean,
 ) {
+  // 能否传boolean值
   this.acceptsBooleans =
     type === BOOLEANISH_STRING ||
     type === BOOLEAN ||
@@ -236,6 +254,7 @@ function PropertyInfoRecord(
 const properties = {};
 
 // These props are reserved by React. They shouldn't be written to the DOM.
+// React保留属性，会过滤掉不写入真实DOM
 const reservedProps = [
   'children',
   'dangerouslySetInnerHTML',
@@ -264,6 +283,7 @@ reservedProps.forEach(name => {
 
 // A few React string attributes have a different name.
 // This is a mapping from React prop names to the attribute names.
+// React属性到真实DOM属性的映射
 [
   ['acceptCharset', 'accept-charset'],
   ['className', 'class'],
@@ -284,6 +304,7 @@ reservedProps.forEach(name => {
 // These are "enumerated" HTML attributes that accept "true" and "false".
 // In React, we let users pass `true` and `false` even though technically
 // these aren't boolean attributes (they are coerced to strings).
+// 布尔值，转换成字符串传给DOM
 ['contentEditable', 'draggable', 'spellCheck', 'value'].forEach(name => {
   properties[name] = new PropertyInfoRecord(
     name,
@@ -300,6 +321,7 @@ reservedProps.forEach(name => {
 // In React, we let users pass `true` and `false` even though technically
 // these aren't boolean attributes (they are coerced to strings).
 // Since these are SVG attributes, their attribute names are case-sensitive.
+// 布尔值，转换成字符串传给DOM
 [
   'autoReverse',
   'externalResourcesRequired',
@@ -318,6 +340,7 @@ reservedProps.forEach(name => {
 });
 
 // These are HTML boolean attributes.
+// DOM上就是布尔值的属性
 [
   'allowFullScreen',
   'async',
@@ -359,6 +382,7 @@ reservedProps.forEach(name => {
 
 // These are the few React props that we set as DOM properties
 // rather than attributes. These are all booleans.
+// DOM上就是布尔值
 [
   'checked',
   // Note: `option.selected` is not updated if `select.multiple` is
@@ -384,6 +408,7 @@ reservedProps.forEach(name => {
 
 // These are HTML attributes that are "overloaded booleans": they behave like
 // booleans, but can also accept a string value.
+// 可接受布尔值和其他可选值的DOM属性
 [
   'capture',
   'download',
@@ -404,6 +429,7 @@ reservedProps.forEach(name => {
 });
 
 // These are HTML attributes that must be positive numbers.
+// 必须是正数的DOM属性
 [
   'cols',
   'rows',
@@ -426,6 +452,7 @@ reservedProps.forEach(name => {
 });
 
 // These are HTML attributes that must be numbers.
+// 必须是数字的DOM属性
 ['rowSpan', 'start'].forEach(name => {
   properties[name] = new PropertyInfoRecord(
     name,
@@ -437,7 +464,7 @@ reservedProps.forEach(name => {
     false, // removeEmptyString
   );
 });
-
+// -转驼峰方法
 const CAMELIZE = /[\-\:]([a-z])/g;
 const capitalize = token => token[1].toUpperCase();
 
@@ -446,6 +473,7 @@ const capitalize = token => token[1].toUpperCase();
 // and have the same names are omitted, just like in the HTML attribute filter.
 // Some of these attributes can be hard to find. This list was created by
 // scraping the MDN documentation.
+// svg属性，React使用中用驼峰，真实使用转-
 [
   'accent-height',
   'alignment-baseline',
@@ -538,6 +566,7 @@ const capitalize = token => token[1].toUpperCase();
 });
 
 // String SVG attributes with the xlink namespace.
+// 有名称空间的属性
 [
   'xlink:actuate',
   'xlink:arcrole',
@@ -563,6 +592,7 @@ const capitalize = token => token[1].toUpperCase();
 });
 
 // String SVG attributes with the xml namespace.
+// 有名称空间的属性
 [
   'xml:base',
   'xml:lang',
@@ -587,6 +617,7 @@ const capitalize = token => token[1].toUpperCase();
 // These attribute exists both in HTML and SVG.
 // The attribute name is case-sensitive in SVG so we can't just use
 // the React name like we do for attributes that exist only in HTML.
+// html和svg属性同名属性
 ['tabIndex', 'crossOrigin'].forEach(attributeName => {
   properties[attributeName] = new PropertyInfoRecord(
     attributeName,

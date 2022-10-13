@@ -90,7 +90,7 @@ export function createEventListenerWrapper(
     targetContainer,
   );
 }
-
+// 根据事件名获取优先级并且使用不同的事件监听器
 export function createEventListenerWrapperWithPriority(
   targetContainer: EventTarget,
   domEventName: DOMEventName,
@@ -117,7 +117,8 @@ export function createEventListenerWrapperWithPriority(
     targetContainer,
   );
 }
-
+// 离散事件的事件触发器
+// 前三个参数初始化时绑定，最后一个参数在事件触发时传入
 function dispatchDiscreteEvent(
   domEventName,
   eventSystemFlags,
@@ -178,7 +179,7 @@ function dispatchUserBlockingUpdate(
     );
   }
 }
-
+// 事件触发时会执行
 export function dispatchEvent(
   domEventName: DOMEventName,
   eventSystemFlags: EventSystemFlags,
@@ -188,6 +189,7 @@ export function dispatchEvent(
   if (!_enabled) {
     return;
   }
+  // 允许重放？
   let allowReplay = true;
   if (enableEagerRootListeners) {
     // TODO: replaying capture phase events is currently broken
@@ -196,6 +198,7 @@ export function dispatchEvent(
     // In eager mode, we attach capture listeners early, so we need
     // to filter them out until we fix the logic to handle them correctly.
     // This could've been outside the flag but I put it inside to reduce risk.
+    // 冒泡阶段allowReplay为true
     allowReplay = (eventSystemFlags & IS_CAPTURE_PHASE) === 0;
   }
   if (
@@ -215,7 +218,7 @@ export function dispatchEvent(
     );
     return;
   }
-
+  // 这个blockedOn正常场景下都是null
   const blockedOn = attemptToDispatchEvent(
     domEventName,
     eventSystemFlags,
@@ -278,12 +281,15 @@ export function attemptToDispatchEvent(
   nativeEvent: AnyNativeEvent,
 ): null | Container | SuspenseInstance {
   // TODO: Warn if _enabled is false.
-
+  // 获取事件target
   const nativeEventTarget = getEventTarget(nativeEvent);
+  // 获取target最近的DOM节点对应的fiber
   let targetInst = getClosestInstanceFromNode(nativeEventTarget);
 
   if (targetInst !== null) {
+    // 一般是拿到fiber节点自身
     const nearestMounted = getNearestMountedFiber(targetInst);
+    // 一般来说说下面的分支都不会命中，不用看
     if (nearestMounted === null) {
       // This tree has been unmounted already. Dispatch without a target.
       targetInst = null;
@@ -319,6 +325,7 @@ export function attemptToDispatchEvent(
       }
     }
   }
+  // 处理事件
   dispatchEventForPluginEventSystem(
     domEventName,
     eventSystemFlags,

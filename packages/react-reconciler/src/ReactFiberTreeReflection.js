@@ -29,7 +29,7 @@ import {NoFlags, Placement, Hydrating} from './ReactFiberFlags';
 import {enableFundamentalAPI} from 'shared/ReactFeatureFlags';
 
 const ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
-
+// 获取fiber挂载的最近的节点，一般是返回自身
 export function getNearestMountedFiber(fiber: Fiber): null | Fiber {
   let node = fiber;
   let nearestMounted = fiber;
@@ -59,6 +59,7 @@ export function getNearestMountedFiber(fiber: Fiber): null | Fiber {
   }
   // If we didn't hit the root, that means that we're in an disconnected tree
   // that has been unmounted.
+  // 游离的fiber节点，已被卸载
   return null;
 }
 

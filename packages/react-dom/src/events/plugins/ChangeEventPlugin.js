@@ -29,7 +29,7 @@ import {
   processDispatchQueue,
   accumulateTwoPhaseListeners,
 } from '../DOMPluginEventSystem';
-
+// 注册和表单变动相关事件
 function registerEvents() {
   registerTwoPhaseEvent('onChange', [
     'change',
@@ -72,6 +72,7 @@ let activeElementInst = null;
 /**
  * SECTION: handle `change` event
  */
+// 判断DOM节点是否使用change事件
 function shouldUseChangeEvent(elem) {
   const nodeName = elem.nodeName && elem.nodeName.toLowerCase();
   return (
@@ -106,14 +107,14 @@ function manualDispatchChangeEvent(nativeEvent) {
 function runEventInBatch(dispatchQueue) {
   processDispatchQueue(dispatchQueue, 0);
 }
-
+// 如果表单值发生了变化，则返回表单DOM实例
 function getInstIfValueChanged(targetInst: Object) {
   const targetNode = getNodeFromInstance(targetInst);
   if (updateValueIfChanged(((targetNode: any): HTMLInputElement))) {
     return targetInst;
   }
 }
-
+// 获取触发change事件时的DOM实例对象
 function getTargetInstForChangeEvent(domEventName: DOMEventName, targetInst) {
   if (domEventName === 'change') {
     return targetInst;
@@ -168,7 +169,7 @@ function handlePropertyChange(nativeEvent) {
     manualDispatchChangeEvent(nativeEvent);
   }
 }
-
+// 兼容处理低版本浏览器的输入事件
 function handleEventsForInputEventPolyfill(
   domEventName: DOMEventName,
   target,
@@ -193,6 +194,7 @@ function handleEventsForInputEventPolyfill(
 }
 
 // For IE8 and IE9.
+// 兼容处理低版本浏览器表单变化
 function getTargetInstForInputEventPolyfill(
   domEventName: DOMEventName,
   targetInst,
@@ -219,6 +221,7 @@ function getTargetInstForInputEventPolyfill(
 /**
  * SECTION: handle `click` event
  */
+// 判断是否checkbox或radio，使用click事件
 function shouldUseClickEvent(elem) {
   // Use the `click` event to detect changes to checkbox and radio inputs.
   // This approach works across all browsers, whereas `change` does not fire
@@ -230,13 +233,13 @@ function shouldUseClickEvent(elem) {
     (elem.type === 'checkbox' || elem.type === 'radio')
   );
 }
-
+// 对于使用click事件触发的表单DOM实例，查看值是否发生了变化
 function getTargetInstForClickEvent(domEventName: DOMEventName, targetInst) {
   if (domEventName === 'click') {
     return getInstIfValueChanged(targetInst);
   }
 }
-
+// 判断对于input和change事件应使用哪个DOM实例(自身or?)
 function getTargetInstForInputOrChangeEvent(
   domEventName: DOMEventName,
   targetInst,
@@ -269,6 +272,7 @@ function handleControlledInputBlur(node: HTMLInputElement) {
  * - textarea
  * - select
  */
+// 收集表单修改相关事件回调
 function extractEvents(
   dispatchQueue: DispatchQueue,
   domEventName: DOMEventName,
@@ -278,9 +282,11 @@ function extractEvents(
   eventSystemFlags: EventSystemFlags,
   targetContainer: null | EventTarget,
 ) {
+  // 拿到DOM实例
   const targetNode = targetInst ? getNodeFromInstance(targetInst) : window;
 
   let getTargetInstFunc, handleEventFunc;
+  // 根据DOM实例类型，判断获取处理事件的真正实例
   if (shouldUseChangeEvent(targetNode)) {
     getTargetInstFunc = getTargetInstForChangeEvent;
   } else if (isTextInputElement(((targetNode: any): HTMLElement))) {
@@ -295,6 +301,7 @@ function extractEvents(
   }
 
   if (getTargetInstFunc) {
+    // 如果表单值发生了变化，则inst不为空
     const inst = getTargetInstFunc(domEventName, targetInst);
     if (inst) {
       createAndAccumulateChangeEvent(

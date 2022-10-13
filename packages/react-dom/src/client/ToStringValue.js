@@ -18,10 +18,11 @@ export opaque type ToStringValue =
 // Flow does not allow string concatenation of most non-string types. To work
 // around this limitation, we use an opaque type that can only be obtained by
 // passing the value through getToStringValue first.
+// 转字符串方法
 export function toString(value: ToStringValue): string {
   return '' + (value: any);
 }
-
+// 根据类型获取该转换的类型值
 export function getToStringValue(value: mixed): ToStringValue {
   switch (typeof value) {
     case 'boolean':

@@ -6,9 +6,10 @@
  *
  * @flow
  */
-
+// 判断是否自定义组件的方法
 function isCustomComponent(tagName: string, props: Object) {
   if (tagName.indexOf('-') === -1) {
+    // 如果没有-，但是传了is为字符串，则是自定义组件
     return typeof props.is === 'string';
   }
   switch (tagName) {
@@ -24,8 +25,10 @@ function isCustomComponent(tagName: string, props: Object) {
     case 'font-face-format':
     case 'font-face-name':
     case 'missing-glyph':
+    // 这几种是保留字段
       return false;
     default:
+    // 否则都是自定义组件
       return true;
   }
 }

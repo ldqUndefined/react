@@ -10,7 +10,7 @@
 import type {DOMEventName} from './DOMEventNames';
 
 import {enableCreateEventHandleAPI} from 'shared/ReactFeatureFlags';
-
+// 记录所有原生事件名
 export const allNativeEvents: Set<DOMEventName> = new Set();
 
 if (enableCreateEventHandleAPI) {
@@ -21,6 +21,7 @@ if (enableCreateEventHandleAPI) {
 /**
  * Mapping from registration name to event name
  */
+// react事件名——>原生事件名数组
 export const registrationNameDependencies = {};
 
 /**
@@ -31,7 +32,7 @@ export const registrationNameDependencies = {};
  */
 export const possibleRegistrationNames = __DEV__ ? {} : (null: any);
 // Trust the developer to only use possibleRegistrationNames in __DEV__
-
+// 注册冒泡和捕获阶段事件
 export function registerTwoPhaseEvent(
   registrationName: string,
   dependencies: Array<DOMEventName>,
@@ -39,7 +40,7 @@ export function registerTwoPhaseEvent(
   registerDirectEvent(registrationName, dependencies);
   registerDirectEvent(registrationName + 'Capture', dependencies);
 }
-
+// 注册事件
 export function registerDirectEvent(
   registrationName: string,
   dependencies: Array<DOMEventName>,
@@ -53,7 +54,7 @@ export function registerDirectEvent(
       );
     }
   }
-
+  // react事件名映射到原生事件名数组
   registrationNameDependencies[registrationName] = dependencies;
 
   if (__DEV__) {
@@ -66,6 +67,7 @@ export function registerDirectEvent(
   }
 
   for (let i = 0; i < dependencies.length; i++) {
+    // 把被映射原生的事件都记录起来
     allNativeEvents.add(dependencies[i]);
   }
 }
